@@ -36,6 +36,7 @@ jobs:
           app_location: "."
           api_location: ""
           output_location: "dist"
+          app_artifact_location: "dist"
           skip_deploy_on_missing_secrets: true
 
   close_pull_request_job:
