@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Table as TableTennis, Trophy, LogIn, LogOut, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';

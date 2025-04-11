@@ -26,6 +26,8 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: List directories
+        run: ls -la && ls -la build || echo "build folder missing" && ls -la dist || echo "dist folder missing"
       - name: Deploy to Azure Static Web Apps
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -35,8 +37,8 @@ jobs:
           action: "upload"
           app_location: "."
           api_location: ""
-          output_location: "dist"
-          app_artifact_location: "dist"
+          output_location: "build"
+          app_artifact_location: "build"
           skip_deploy_on_missing_secrets: true
 
   close_pull_request_job:

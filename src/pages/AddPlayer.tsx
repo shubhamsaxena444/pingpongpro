@@ -44,7 +44,7 @@ function AddPlayer() {
       const uuid = crypto.randomUUID();
       
       // Call the RPC function that has SECURITY DEFINER privileges
-      const { data, error: rpcError } = await supabase.rpc('create_profile', {
+      const { error: rpcError } = await supabase.rpc('create_profile', {
         user_id: uuid,
         user_username: username,
         user_full_name: fullName || null
