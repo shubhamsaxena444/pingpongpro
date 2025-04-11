@@ -1,6 +1,18 @@
 {
   "routes": [
     {
+      "route": "/assets/*.js",
+      "headers": {
+        "content-type": "application/javascript"
+      }
+    },
+    {
+      "route": "/assets/*.css",
+      "headers": {
+        "content-type": "text/css"
+      }
+    },
+    {
       "route": "/*",
       "rewrite": "/index.html"
     }
@@ -16,7 +28,14 @@
     }
   },
   "mimeTypes": {
-    ".json": "text/json"
+    ".json": "text/json",
+    ".js": "application/javascript",
+    ".css": "text/css",
+    ".html": "text/html",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon"
   },
   "platform": {
     "apiRuntime": "node:18"
