@@ -11,6 +11,10 @@ declare global {
       VITE_COSMOS_DB_CONTAINER_NAME?: string;
       VITE_MICROSOFT_CLIENT_ID?: string;
       VITE_MICROSOFT_CLIENT_SECRET?: string;
+      VITE_AZURE_OPENAI_API_KEY?: string;
+      VITE_AZURE_OPENAI_ENDPOINT?: string;
+      VITE_AZURE_OPENAI_MODEL_NAME?: string;
+      VITE_AZURE_OPENAI_API_VERSION?: string;
     };
   }
 }
@@ -69,6 +73,12 @@ export const config = {
   microsoft: {
     clientId: getEnvVar('VITE_MICROSOFT_CLIENT_ID'),
     clientSecret: getEnvVar('VITE_MICROSOFT_CLIENT_SECRET'),
+  },
+  azureOpenai: {
+    apiKey: getEnvVar('VITE_AZURE_OPENAI_API_KEY'),
+    endpoint: getEnvVar('VITE_AZURE_OPENAI_ENDPOINT'),
+    modelName: getEnvVar('VITE_AZURE_OPENAI_MODEL_NAME'),
+    apiVersion: getEnvVar('VITE_AZURE_OPENAI_API_VERSION') || '2023-05-15',
   }
 };
 
@@ -82,6 +92,12 @@ console.log('Configuration status:', {
   microsoft: {
     clientIdPresent: !!config.microsoft.clientId,
     clientSecretPresent: !!config.microsoft.clientSecret,
+  },
+  azureOpenai: {
+    apiKeyPresent: !!config.azureOpenai.apiKey,
+    endpointPresent: !!config.azureOpenai.endpoint,
+    modelNamePresent: !!config.azureOpenai.modelName,
+    apiVersion: config.azureOpenai.apiVersion
   }
 });
 
