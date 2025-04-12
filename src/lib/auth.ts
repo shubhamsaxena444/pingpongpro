@@ -1,4 +1,4 @@
-import { PublicClientApplication, AuthenticationResult, AccountInfo } from '@azure/msal-browser';
+import { PublicClientApplication, AuthenticationResult, AccountInfo, RedirectRequest } from '@azure/msal-browser';
 
 export interface IUser {
   id: string;
@@ -10,20 +10,34 @@ export interface IUser {
 // MSAL configuration for Azure AD
 const msalConfig = {
   auth: {
-    clientId: import.meta.env.VITE_AZURE_CLIENT_ID || '',
-    authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_TENANT_ID || 'common'}`,
+    clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID || '',
+    authority: 'https://login.microsoftonline.com/consumers/',
     redirectUri: window.location.origin,
+    postLogoutRedirectUri: window.location.origin,
   },
   cache: {
     cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false,
+    storeAuthStateInCookie: true,
+  },
+  system: {
+    loggerOptions: {
+      loggerCallback: (level, message, containsPii) => {
+        if (!containsPii) {
+          console.log(`MSAL - ${level}: ${message}`);
+        }
+      },
+      logLevel: 3, // Verbose logging (0=Error, 1=Warning, 2=Info, 3=Verbose)
+    }
   }
 };
 
 // Login request configuration
-const loginRequest = {
-  scopes: ['User.Read', 'openid', 'profile', 'email']
+const loginRequest: RedirectRequest = {
+  scopes: ['User.Read', 'openid', 'profile', 'email'],
 };
+
+// For debugging
+console.log("Auth module loaded with client ID:", import.meta.env.VITE_MICROSOFT_CLIENT_ID);
 
 // MSAL Client instance
 const msalInstance = new PublicClientApplication(msalConfig);
@@ -32,20 +46,32 @@ const msalInstance = new PublicClientApplication(msalConfig);
 export const auth = {
   // Initialize the auth client
   initialize: async (): Promise<void> => {
-    await msalInstance.initialize();
-    msalInstance.handleRedirectPromise().catch(error => {
-      console.error('Error handling redirect:', error);
-    });
+    try {
+      await msalInstance.initialize();
+      console.log("MSAL initialized successfully");
+      
+      // Handle the redirect promise on page load to catch redirect responses
+      await msalInstance.handleRedirectPromise().then(response => {
+        if (response) {
+          console.log("Successfully handled redirect response", response.account?.username);
+        } else {
+          console.log("No redirect response to handle");
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing MSAL:', error);
+    }
   },
 
   // Sign in with Microsoft
   signIn: async (): Promise<IUser | null> => {
     try {
-      const response: AuthenticationResult = await msalInstance.loginPopup(loginRequest);
+      console.log("Starting sign-in process with redirect flow...");
+      // Using loginRedirect instead of loginPopup to avoid cross-origin issues
+      await msalInstance.loginRedirect(loginRequest);
       
-      if (response && response.account) {
-        return transformAccountToUser(response.account, response.accessToken);
-      }
+      // This code will not execute immediately as the page will redirect
+      // The response will be handled in the initialize method after redirect
       return null;
     } catch (error) {
       console.error('Sign-in error:', error);
@@ -61,7 +87,8 @@ export const auth = {
         postLogoutRedirectUri: window.location.origin,
       };
       
-      await msalInstance.logoutPopup(logoutRequest);
+      // Use logoutRedirect to be consistent with the login flow
+      await msalInstance.logoutRedirect(logoutRequest);
     } catch (error) {
       console.error('Sign-out error:', error);
       throw error;

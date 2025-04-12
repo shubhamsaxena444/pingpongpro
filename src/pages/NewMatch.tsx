@@ -121,32 +121,32 @@ function NewMatch() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center items-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8">Record New Match</h1>
+    <div className="w-full max-w-md mx-auto px-4 sm:px-0">
+      <h1 className="text-2xl md:text-3xl font-bold text-center mb-6 md:mb-8">Record New Match</h1>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 md:px-4 md:py-3 rounded mb-4 text-sm md:text-base">
           {error}
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-        <div className="grid grid-cols-2 gap-6 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 md:p-6">
+        <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 mb-4 md:mb-6">
+          <div className="mb-4 md:mb-0">
+            <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
               Player 1
             </label>
             <select
               value={player1}
               onChange={(e) => setPlayer1(e.target.value)}
-              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
               required
             >
               <option value="">Select player</option>
@@ -159,13 +159,13 @@ function NewMatch() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
               Player 2
             </label>
             <select
               value={player2}
               onChange={(e) => setPlayer2(e.target.value)}
-              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
               required
             >
               <option value="">Select player</option>
@@ -178,9 +178,9 @@ function NewMatch() {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-6 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-6 mb-4 md:mb-6">
+          <div className="mb-4 md:mb-0">
+            <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
               Player 1 Score
             </label>
             <input
@@ -189,13 +189,13 @@ function NewMatch() {
               max="999"
               value={player1Score}
               onChange={(e) => setPlayer1Score(parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
               required
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
               Player 2 Score
             </label>
             <input
@@ -204,17 +204,17 @@ function NewMatch() {
               max="999"
               value={player2Score}
               onChange={(e) => setPlayer2Score(parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
               required
             />
           </div>
         </div>
         
-        <div className="mt-6">
+        <div className="mt-4 md:mt-6">
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 text-sm md:text-base"
           >
             {submitting ? 'Submitting...' : 'Submit Match'}
           </button>

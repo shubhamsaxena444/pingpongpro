@@ -10,6 +10,8 @@ class MicrosoftLogin extends React.Component {
       user: {},
       error: null
     };
+    // Log config for debugging
+    console.log("MSAL config client ID:", msalConfig.auth.clientId);
     this.msalInstance = new PublicClientApplication(msalConfig);
   }
 
@@ -43,13 +45,8 @@ class MicrosoftLogin extends React.Component {
 
   signIn = () => {
     try {
-      // Adding client_id explicitly to ensure it's included in the request
-      const customRequest = {
-        ...loginRequest,
-        client_id: msalConfig.auth.clientId
-      };
-      
-      this.msalInstance.loginRedirect(customRequest);
+      // Use the standard loginRequest without modifying it
+      this.msalInstance.loginRedirect(loginRequest);
     } catch (error) {
       console.error("Sign in error:", error);
       this.setState({ error: error.message });

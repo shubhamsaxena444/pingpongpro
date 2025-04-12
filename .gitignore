@@ -27,3 +27,15 @@ dist-ssr
 .env
 .env.*
 !.env.example
+.azure
+
+# Local development settings
+swa-*.json
+.swa/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/

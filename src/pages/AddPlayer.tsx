@@ -78,60 +78,60 @@ function AddPlayer() {
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="text-center mb-8">
-        <div className="flex justify-center mb-4">
-          <UserPlus className="h-12 w-12 text-green-500" />
+    <div className="w-full max-w-md mx-auto px-4 sm:px-0">
+      <div className="text-center mb-6 md:mb-8">
+        <div className="flex justify-center mb-3 md:mb-4">
+          <UserPlus className="h-10 w-10 md:h-12 md:w-12 text-green-500" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Add New Player</h1>
-        <p className="text-gray-600 mt-2">Create a new player for matches</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Add New Player</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-2">Create a new player for matches</p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 md:px-4 md:py-3 rounded mb-4 text-sm md:text-base">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-3 py-2 md:px-4 md:py-3 rounded mb-4 text-sm md:text-base">
           {success}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-4 md:p-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
               Username *
             </label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
               Full Name (optional)
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
             />
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-5 md:mt-6">
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50"
+            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 text-sm md:text-base"
           >
             {loading ? 'Adding...' : 'Add Player'}
           </button>

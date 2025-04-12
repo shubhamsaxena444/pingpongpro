@@ -25,8 +25,7 @@ export interface IMatch {
 
 // Cosmos DB configuration
 interface CosmosDBConfig {
-  endpoint: string;
-  key: string;
+  connectionString: string;
   databaseId: string;
   containersConfig: {
     profiles: { id: string; partitionKey: string };
@@ -45,14 +44,43 @@ export interface CosmosDBClient {
 // Singleton pattern for Cosmos DB client
 let cosmosDBInstance: CosmosDBClient | null = null;
 
+// Parse connection string for environment variables
+const parseConnectionString = (connString: string) => {
+  try {
+    // Extract the account endpoint
+    const endpointMatch = connString.match(/AccountEndpoint=([^;]+)/);
+    let endpoint = endpointMatch ? endpointMatch[1] : '';
+    
+    // Replace the actual endpoint with our proxy endpoint when in development
+    if (import.meta.env.DEV && endpoint) {
+      // Extract the hostname from the endpoint
+      const originalUrl = new URL(endpoint);
+      // Use the proxy path instead
+      endpoint = `${window.location.origin}/cosmos-api`;
+      console.log(`Development mode: Replacing Cosmos DB endpoint with proxy: ${endpoint}`);
+    }
+    
+    // Extract the account key
+    const keyMatch = connString.match(/AccountKey=([^;]+)/);
+    const key = keyMatch ? keyMatch[1] : '';
+    
+    return { endpoint, key };
+  } catch (error) {
+    console.error('Error parsing connection string:', error);
+    return { endpoint: '', key: '' };
+  }
+};
+
 // Configuration object with environment variables
+const connectionString = import.meta.env.VITE_COSMOS_DB_CONNECTION_STRING || '';
+const { endpoint, key } = parseConnectionString(connectionString);
+
 const cosmosConfig: CosmosDBConfig = {
-  endpoint: import.meta.env.VITE_AZURE_COSMOS_ENDPOINT || '',
-  key: import.meta.env.VITE_AZURE_COSMOS_KEY || '',
-  databaseId: import.meta.env.VITE_AZURE_COSMOS_DATABASE || 'pingpong-db',
+  connectionString: connectionString,
+  databaseId: import.meta.env.VITE_COSMOS_DB_DATABASE_NAME || 'pingpongpro',
   containersConfig: {
     profiles: {
-      id: 'profiles',
+      id: import.meta.env.VITE_COSMOS_DB_CONTAINER_NAME || 'profile',
       partitionKey: '/id'
     },
     matches: {
@@ -64,14 +92,14 @@ const cosmosConfig: CosmosDBConfig = {
 
 // Initialize Cosmos DB client and containers
 export const initializeCosmosDB = async (): Promise<CosmosDBClient> => {
-  if (!cosmosConfig.endpoint || !cosmosConfig.key) {
+  if (!connectionString || !endpoint || !key) {
     throw new Error('Azure Cosmos DB credentials are not configured properly. Check your environment variables.');
   }
 
-  // Create the Cosmos client
+  // Create the Cosmos client with our endpoint (which may be proxied in development)
   const client = new CosmosClient({
-    endpoint: cosmosConfig.endpoint,
-    key: cosmosConfig.key
+    endpoint,
+    key
   });
 
   // Get (or create) the database

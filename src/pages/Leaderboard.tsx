@@ -92,7 +92,7 @@ function Leaderboard() {
         setPlayers(enhancedPlayers);
       } catch (err) {
         console.error('Exception when loading leaderboard:', err);
-        setError('Failed to load leaderboard');
+        setError('Failed to load leaderboard data. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -122,151 +122,216 @@ function Leaderboard() {
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-8">
         <div className="flex justify-center mb-4">
-          <Trophy className="h-12 w-12 text-yellow-500" />
+          <Trophy className="h-10 w-10 md:h-12 md:w-12 text-yellow-500" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">Player Rankings</h1>
-        <p className="text-gray-600 mt-2">See how players stack up against each other!</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Player Rankings</h1>
+        <p className="text-sm md:text-base text-gray-600 mt-2">See how players stack up against each other!</p>
       </div>
 
       {error ? (
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
+        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <Link to="/login" className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-            Sign In
-          </Link>
+          <button 
+            onClick={() => window.location.reload()}
+            className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition mr-3"
+          >
+            Refresh
+          </button>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="border-b flex">
             <button 
-              className={`py-3 px-6 font-medium text-sm ${activeTab === 'wins' ? 'bg-blue-50 border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`py-2 px-3 md:py-3 md:px-6 font-medium text-xs md:text-sm ${activeTab === 'wins' ? 'bg-blue-50 border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('wins')}
             >
               Wins & Matches
             </button>
             <button 
-              className={`py-3 px-6 font-medium text-sm ${activeTab === 'points' ? 'bg-blue-50 border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`py-2 px-3 md:py-3 md:px-6 font-medium text-xs md:text-sm ${activeTab === 'points' ? 'bg-blue-50 border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('points')}
             >
               Points & Scoring
             </button>
           </div>
 
-          {activeTab === 'wins' ? (
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Player
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Matches
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Wins
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Win Rate
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+          {/* Mobile view */}
+          <div className="block md:hidden">
+            {activeTab === 'wins' ? (
+              <div className="divide-y divide-gray-200">
                 {sortedPlayers.map((player, index) => (
-                  <tr key={player.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">#{index + 1}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{player.username}</div>
-                      {player.displayName && (
-                        <div className="text-sm text-gray-500">{player.displayName}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{player.matches_played}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{player.matches_won}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{player.win_rate}%</div>
-                    </td>
-                  </tr>
+                  <div key={player.id} className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="font-medium">#{index + 1} {player.username}</div>
+                      <div className="text-sm text-blue-600">{player.win_rate}% win rate</div>
+                    </div>
+                    <div className="grid grid-cols-2 text-sm text-gray-500">
+                      <div>Matches: {player.matches_played}</div>
+                      <div>Wins: {player.matches_won}</div>
+                    </div>
+                  </div>
                 ))}
                 {players.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      No players found. Start playing matches to appear on the leaderboard!
-                    </td>
-                  </tr>
+                  <div className="p-4 text-center text-gray-500">
+                    No players found. Start playing matches to appear on the leaderboard!
+                  </div>
                 )}
-              </tbody>
-            </table>
-          ) : (
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Player
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Points Scored
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Avg Per Match
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Differential
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Biggest Win
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
                 {sortedPlayers.map((player, index) => (
-                  <tr key={player.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">#{index + 1}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{player.username}</div>
-                      {player.displayName && (
-                        <div className="text-sm text-gray-500">{player.displayName}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{player.points_scored}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{player.avg_points_per_match}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900" style={{ color: player.point_differential > 0 ? 'green' : player.point_differential < 0 ? 'red' : 'inherit' }}>
-                        {player.point_differential > 0 ? '+' : ''}{player.point_differential}
+                  <div key={player.id} className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="font-medium">#{index + 1} {player.username}</div>
+                      <div className="text-sm" style={{ color: player.point_differential > 0 ? 'green' : player.point_differential < 0 ? 'red' : 'inherit' }}>
+                        {player.point_differential > 0 ? '+' : ''}{player.point_differential} pts
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{player.biggest_win}</div>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="grid grid-cols-2 text-sm text-gray-500">
+                      <div>Points: {player.points_scored}</div>
+                      <div>Avg: {player.avg_points_per_match}/game</div>
+                    </div>
+                  </div>
                 ))}
                 {players.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                      No players found. Start playing matches to appear on the leaderboard!
-                    </td>
-                  </tr>
+                  <div className="p-4 text-center text-gray-500">
+                    No players found. Start playing matches to appear on the leaderboard!
+                  </div>
                 )}
-              </tbody>
-            </table>
-          )}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop view - Original tables */}
+          <div className="hidden md:block">
+            {activeTab === 'wins' ? (
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rank
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Player
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Matches
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Wins
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Win Rate
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedPlayers.map((player, index) => (
+                    <tr key={player.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">#{index + 1}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{player.username}</div>
+                        {player.displayName && (
+                          <div className="text-sm text-gray-500">{player.displayName}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{player.matches_played}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{player.matches_won}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{player.win_rate}%</div>
+                      </td>
+                    </tr>
+                  ))}
+                  {players.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                        No players found. Start playing matches to appear on the leaderboard!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rank
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Player
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Points Scored
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Avg Per Match
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Differential
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Biggest Win
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedPlayers.map((player, index) => (
+                    <tr key={player.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">#{index + 1}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{player.username}</div>
+                        {player.displayName && (
+                          <div className="text-sm text-gray-500">{player.displayName}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{player.points_scored}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{player.avg_points_per_match}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900" style={{ color: player.point_differential > 0 ? 'green' : player.point_differential < 0 ? 'red' : 'inherit' }}>
+                          {player.point_differential > 0 ? '+' : ''}{player.point_differential}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{player.biggest_win}</div>
+                      </td>
+                    </tr>
+                  ))}
+                  {players.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                        No players found. Start playing matches to appear on the leaderboard!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!error && players.length === 0 && (
+        <div className="mt-6 text-center">
+          <p className="text-gray-600 mb-4">Ready to join the competition?</p>
+          <Link 
+            to="/login" 
+            className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          >
+            Sign in to add players and record matches
+          </Link>
         </div>
       )}
     </div>

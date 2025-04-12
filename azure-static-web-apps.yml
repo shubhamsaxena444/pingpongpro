@@ -48,6 +48,16 @@ jobs:
           output_location: "dist"
           app_artifact_location: "dist"
           skip_deploy_on_missing_secrets: true
+          app_build_command: "npm run build"
+          api_build_command: ""
+          env_vars: |
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+            VITE_COSMOS_DB_CONNECTION_STRING=${{ secrets.VITE_COSMOS_DB_CONNECTION_STRING }}
+            VITE_COSMOS_DB_DATABASE_NAME=${{ secrets.VITE_COSMOS_DB_DATABASE_NAME }}
+            VITE_COSMOS_DB_CONTAINER_NAME=${{ secrets.VITE_COSMOS_DB_CONTAINER_NAME }}
+            MICROSOFT_PROVIDER_AUTHENTICATION_ID=${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_ID }}
+            MICROSOFT_PROVIDER_AUTHENTICATION_SECRET=${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_SECRET }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
