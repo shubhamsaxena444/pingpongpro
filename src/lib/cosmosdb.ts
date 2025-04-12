@@ -11,6 +11,11 @@ export interface IProfile {
   matches_won?: number;
   doubles_matches_played?: number;  // Added for doubles stats
   doubles_matches_won?: number;     // Added for doubles stats
+  rating?: number;                 // Player skill rating based on points
+  singles_points_scored?: number;  // Total singles points scored
+  singles_points_conceded?: number; // Total singles points conceded
+  doubles_points_scored?: number;  // Total doubles points scored
+  doubles_points_conceded?: number; // Total doubles points conceded
   created_at?: string;
   updated_at?: string;
 }

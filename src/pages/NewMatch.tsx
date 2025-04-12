@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCosmosDB } from '../lib/cosmosdb';
 import { useAuth } from '../contexts/AuthContext';
+import { updatePlayerRating } from '../lib/rating';
 
 interface Player {
   id: string;
@@ -99,25 +100,47 @@ function NewMatch() {
       // Add match to Cosmos DB
       await matchesContainer.items.create(matchData);
       
-      // Update player statistics (matches_played and matches_won)
-      // For winner
-      const { resource: winnerProfile } = await profilesContainer.item(winnerId, winnerId).read();
-      if (winnerProfile) {
-        await profilesContainer.item(winnerId, winnerId).replace({
-          ...winnerProfile,
-          matches_played: (winnerProfile.matches_played || 0) + 1,
-          matches_won: (winnerProfile.matches_won || 0) + 1,
-          updated_at: new Date().toISOString()
+      // Get player scores based on their IDs
+      const player1PointsScored = player1Score;
+      const player1PointsConceded = player2Score;
+      const player2PointsScored = player2Score;
+      const player2PointsConceded = player1Score;
+      
+      // Update player 1 statistics with rating
+      const { resource: player1Profile } = await profilesContainer.item(player1, player1).read();
+      if (player1Profile) {
+        const isPlayer1Winner = player1 === winnerId;
+        const updatedPlayer1Profile = updatePlayerRating(
+          player1Profile,
+          player1PointsScored,
+          player1PointsConceded,
+          isPlayer1Winner,
+          false // not doubles
+        );
+        
+        await profilesContainer.item(player1, player1).replace({
+          ...updatedPlayer1Profile,
+          matches_played: (player1Profile.matches_played || 0) + 1,
+          matches_won: isPlayer1Winner ? (player1Profile.matches_won || 0) + 1 : (player1Profile.matches_won || 0),
         });
       }
       
-      // For loser
-      const { resource: loserProfile } = await profilesContainer.item(loserId, loserId).read();
-      if (loserProfile) {
-        await profilesContainer.item(loserId, loserId).replace({
-          ...loserProfile,
-          matches_played: (loserProfile.matches_played || 0) + 1,
-          updated_at: new Date().toISOString()
+      // Update player 2 statistics with rating
+      const { resource: player2Profile } = await profilesContainer.item(player2, player2).read();
+      if (player2Profile) {
+        const isPlayer2Winner = player2 === winnerId;
+        const updatedPlayer2Profile = updatePlayerRating(
+          player2Profile,
+          player2PointsScored,
+          player2PointsConceded,
+          isPlayer2Winner,
+          false // not doubles
+        );
+        
+        await profilesContainer.item(player2, player2).replace({
+          ...updatedPlayer2Profile,
+          matches_played: (player2Profile.matches_played || 0) + 1,
+          matches_won: isPlayer2Winner ? (player2Profile.matches_won || 0) + 1 : (player2Profile.matches_won || 0),
         });
       }
       
@@ -187,28 +210,53 @@ function NewMatch() {
       // Add match to Cosmos DB
       await matchesContainer.items.create(matchData);
       
-      // Update player statistics for all players
-      // For winners
-      for (const winnerId of winnerIds) {
-        const { resource: profile } = await profilesContainer.item(winnerId, winnerId).read();
+      // Calculate points per player in doubles matches (divide team score)
+      // Players on the same team earn equal points
+      const team1PlayerPointsScored = team1Score / 2;
+      const team1PlayerPointsConceded = team2Score / 2;
+      const team2PlayerPointsScored = team2Score / 2;
+      const team2PlayerPointsConceded = team1Score / 2;
+      
+      // Update player statistics for team 1 players
+      const team1PlayerIds = [team1Player1, team1Player2];
+      for (const playerId of team1PlayerIds) {
+        const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
-          await profilesContainer.item(winnerId, winnerId).replace({
-            ...profile,
+          const isWinner = isTeam1Winner;
+          const updatedProfile = updatePlayerRating(
+            profile,
+            team1PlayerPointsScored,
+            team1PlayerPointsConceded,
+            isWinner,
+            true // is doubles
+          );
+          
+          await profilesContainer.item(playerId, playerId).replace({
+            ...updatedProfile,
             doubles_matches_played: (profile.doubles_matches_played || 0) + 1,
-            doubles_matches_won: (profile.doubles_matches_won || 0) + 1,
-            updated_at: new Date().toISOString()
+            doubles_matches_won: isWinner ? (profile.doubles_matches_won || 0) + 1 : (profile.doubles_matches_won || 0),
           });
         }
       }
       
-      // For losers
-      for (const loserId of loserIds) {
-        const { resource: profile } = await profilesContainer.item(loserId, loserId).read();
+      // Update player statistics for team 2 players
+      const team2PlayerIds = [team2Player1, team2Player2];
+      for (const playerId of team2PlayerIds) {
+        const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
-          await profilesContainer.item(loserId, loserId).replace({
-            ...profile,
+          const isWinner = !isTeam1Winner;
+          const updatedProfile = updatePlayerRating(
+            profile,
+            team2PlayerPointsScored,
+            team2PlayerPointsConceded,
+            isWinner,
+            true // is doubles
+          );
+          
+          await profilesContainer.item(playerId, playerId).replace({
+            ...updatedProfile,
             doubles_matches_played: (profile.doubles_matches_played || 0) + 1,
-            updated_at: new Date().toISOString()
+            doubles_matches_won: isWinner ? (profile.doubles_matches_won || 0) + 1 : (profile.doubles_matches_won || 0),
           });
         }
       }

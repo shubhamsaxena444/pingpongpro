@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
 import { getCosmosDB, IMatch, IDoublesMatch } from '../lib/cosmosdb';
 import { Link } from 'react-router-dom';
+import { getRatingCategory, getRatingColor } from '../lib/rating';
 
 interface PlayerStats {
   id: string;
@@ -26,6 +27,9 @@ interface PlayerStats {
   doubles_points_conceded: number;
   doubles_avg_points_per_match: number | string;
   doubles_point_differential: number;
+  // Rating
+  rating: number;
+  ratingCategory: string;
 }
 
 // New interface for team statistics
@@ -61,9 +65,9 @@ function Leaderboard() {
         const profilesContainer = cosmosDB.containers.profiles;
         const matchesContainer = cosmosDB.containers.matches;
         
-        // Fetch profiles data
+        // Fetch profiles data - now include rating fields
         const { resources: profilesData } = await profilesContainer.items
-          .query("SELECT c.id, c.username, c.displayName FROM c")
+          .query("SELECT c.id, c.username, c.displayName, c.rating FROM c")
           .fetchAll();
 
         // Fetch matches data
@@ -176,6 +180,10 @@ function Leaderboard() {
             ? (doublesPointsScored / doubles_matches_played).toFixed(1) 
             : '0.0';
           
+          // Get player rating or use default
+          const rating = player.rating || 1200;
+          const ratingCategory = getRatingCategory(rating);
+          
           return {
             ...player,
             // Singles stats
@@ -201,7 +209,11 @@ function Leaderboard() {
             doubles_points_scored: doublesPointsScored,
             doubles_points_conceded: doublesPointsConceded,
             doubles_avg_points_per_match: doublesAvgPointsPerMatch,
-            doubles_point_differential: doublesPointsScored - doublesPointsConceded
+            doubles_point_differential: doublesPointsScored - doublesPointsConceded,
+            
+            // Rating stats
+            rating,
+            ratingCategory
           };
         });
 
@@ -436,10 +448,15 @@ function Leaderboard() {
                         <div className="font-medium">#{index + 1} {player.username}</div>
                         <div className="text-sm text-blue-600">{player.win_rate}% win rate</div>
                       </div>
-                      <div className="grid grid-cols-3 text-sm text-gray-500">
+                      <div className="grid grid-cols-4 text-sm text-gray-500">
                         <div>Matches: {player.matches_played}</div>
                         <div>Wins: {player.matches_won}</div>
                         <div>Losses: {player.matches_lost}</div>
+                        <div>
+                          <span className="font-medium" style={{ color: getRatingColor(player.rating) }}>
+                            {player.rating} ({player.ratingCategory})
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -581,6 +598,9 @@ function Leaderboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Win Rate
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -606,6 +626,11 @@ function Leaderboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{player.win_rate}%</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium" style={{ color: getRatingColor(player.rating) }}>
+                            {player.rating} <span className="font-normal text-gray-600">({player.ratingCategory})</span>
+                          </div>
                         </td>
                       </tr>
                     ))}
