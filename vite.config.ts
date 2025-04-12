@@ -42,5 +42,9 @@ export default defineConfig({
     watch: {
       usePolling: true, // This helps with some file system watchers that might otherwise miss changes
     },
+  },
+  // Make sure all environment variables are exposed to the client
+  define: {
+    'process.env': {}
   }
 });

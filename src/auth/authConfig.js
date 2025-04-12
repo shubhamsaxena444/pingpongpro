@@ -6,9 +6,12 @@ console.log("Environment variable check:", {
   clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID
 });
 
+// Ensure client ID is always defined, even if empty (for debugging)
+const msalClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
+
 const msalConfig = {
   auth: {
-    clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID, // Remove the fallback to force errors if not defined
+    clientId: msalClientId, 
     authority: "https://login.microsoftonline.com/consumers/", // Changed to consumers for personal Microsoft accounts
     redirectUri: window.location.origin, // Should match the redirect URI in Azure AD app registration
     postLogoutRedirectUri: window.location.origin,
