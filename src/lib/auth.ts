@@ -1,4 +1,4 @@
-import { PublicClientApplication, AuthenticationResult, AccountInfo, RedirectRequest } from '@azure/msal-browser';
+import { PublicClientApplication, AuthenticationResult, AccountInfo, RedirectRequest, LogLevel } from '@azure/msal-browser';
 
 export interface IUser {
   id: string;
@@ -21,7 +21,7 @@ const msalConfig = {
   },
   system: {
     loggerOptions: {
-      loggerCallback: (level, message, containsPii) => {
+      loggerCallback: (level: LogLevel, message: string, containsPii: boolean) => {
         if (!containsPii) {
           console.log(`MSAL - ${level}: ${message}`);
         }
