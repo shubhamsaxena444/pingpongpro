@@ -9,10 +9,13 @@ export interface IProfile {
   email?: string;
   matches_played?: number;
   matches_won?: number;
+  doubles_matches_played?: number;  // Added for doubles stats
+  doubles_matches_won?: number;     // Added for doubles stats
   created_at?: string;
   updated_at?: string;
 }
 
+// The original single player match interface
 export interface IMatch {
   id: string;
   player1_id: string;
@@ -22,6 +25,36 @@ export interface IMatch {
   winner_id: string;
   created_by?: string;
   played_at: string;
+  match_type: 'singles';  // Added to distinguish from doubles
+}
+
+// New interface for doubles matches
+export interface IDoublesMatch {
+  id: string;
+  team1_player1_id: string;
+  team1_player2_id: string;
+  team2_player1_id: string;
+  team2_player2_id: string;
+  team1_score: number;
+  team2_score: number;
+  winner_team: 'team1' | 'team2';  // Identifies which team won
+  winner_ids: string[];           // IDs of the players in the winning team
+  created_by?: string;
+  played_at: string;
+  match_type: 'doubles';          // Identifies this as a doubles match
+}
+
+// Union type for any match type
+export type MatchType = IMatch | IDoublesMatch;
+
+// Type guard to check if a match is a doubles match
+export function isDoublesMatch(match: MatchType): match is IDoublesMatch {
+  return match.match_type === 'doubles';
+}
+
+// Type guard to check if a match is a singles match
+export function isSinglesMatch(match: MatchType): match is IMatch {
+  return match.match_type === 'singles';
 }
 
 // Cosmos DB configuration
