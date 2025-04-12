@@ -101,7 +101,18 @@ function NewMatch() {
       
       // Create match record
       const matchId = crypto.randomUUID();
-      const matchData = {
+      const matchData: {
+        id: string;
+        player1_id: string;
+        player2_id: string;
+        player1_score: number;
+        player2_score: number;
+        winner_id: string;
+        created_by: string | null;
+        played_at: string;
+        match_type: string;
+        match_summary?: string; // Make the summary property optional
+      } = {
         id: matchId,
         player1_id: player1,
         player2_id: player2,
@@ -115,13 +126,21 @@ function NewMatch() {
       
       // Generate match summary
       setGeneratingSummary(true);
+      // Get the winner's name
+      const winnerName = players.find(p => p.id === winningPlayer)?.displayName?.split(' ')[0] || 
+                        players.find(p => p.id === winningPlayer)?.username?.split(' ')[0] || 
+                        (winningPlayer === player1 ? 'Player 1' : 'Player 2');
+      // Get first names only for the players
+      const player1FirstName = player1Name.split(' ')[0];
+      const player2FirstName = player2Name.split(' ')[0];
+      
       const summary = await generateMatchSummary({
         matchType: 'singles',
-        player1Name,
-        player2Name,
+        player1Name: player1FirstName,
+        player2Name: player2FirstName,
         player1Score,
         player2Score,
-        winningPlayerId: winningPlayer, // Changed from winnerId to winningPlayerId
+        winnerName, // Correctly use winnerName instead of winningPlayerId
         commentatorName: commentatorName || undefined  // Pass commentator name if provided
       });
       
@@ -228,7 +247,20 @@ function NewMatch() {
       
       // Create match record
       const matchId = crypto.randomUUID();
-      const matchData = {
+      const matchData: {
+        id: string;
+        team1_player1_id: string;
+        team1_player2_id: string;
+        team2_player1_id: string;
+        team2_player2_id: string;
+        team1_score: number;
+        team2_score: number;
+        winning_team: string;
+        created_by: string | null;
+        played_at: string;
+        match_type: string;
+        summary?: string; // Make the summary property optional
+      } = {
         id: matchId,
         team1_player1_id: team1Player1,
         team1_player2_id: team1Player2,
@@ -244,15 +276,27 @@ function NewMatch() {
       
       // Generate match summary
       setGeneratingSummary(true);
+      
+      // Extract first names only for team players
+      const team1Player1FirstName = team1Player1Name.split(' ')[0];
+      const team1Player2FirstName = team1Player2Name.split(' ')[0];
+      const team2Player1FirstName = team2Player1Name.split(' ')[0];
+      const team2Player2FirstName = team2Player2Name.split(' ')[0];
+      
+      // Determine winning team names
+      const winnerTeamNames = winningTeam === 'team1' 
+        ? [team1Player1FirstName, team1Player2FirstName]
+        : [team2Player1FirstName, team2Player2FirstName];
+        
       const summary = await generateMatchSummary({
         matchType: 'doubles',
-        team1Player1Name,
-        team1Player2Name,
-        team2Player1Name,
-        team2Player2Name,
+        team1Player1Name: team1Player1FirstName,
+        team1Player2Name: team1Player2FirstName,
+        team2Player1Name: team2Player1FirstName,
+        team2Player2Name: team2Player2FirstName,
         team1Score,
         team2Score,
-        winningTeam,
+        winnerTeamNames, // Use the determined winner team names
         commentatorName: commentatorName || undefined  // Pass commentator name if provided
       });
       
