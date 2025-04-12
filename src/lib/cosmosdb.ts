@@ -1,4 +1,5 @@
 import { CosmosClient, Database, Container } from '@azure/cosmos';
+import { config } from './config';
 
 // Define interfaces for our data models
 export interface IProfile {
@@ -71,23 +72,16 @@ const parseConnectionString = (connString: string) => {
   }
 };
 
-// Log environment variables for debugging in production (will be removed in builds)
-console.log('Cosmos DB Environment Variables Check:', {
-  connectionStringExists: !!import.meta.env.VITE_COSMOS_DB_CONNECTION_STRING,
-  databaseNameExists: !!import.meta.env.VITE_COSMOS_DB_DATABASE_NAME,
-  containerNameExists: !!import.meta.env.VITE_COSMOS_DB_CONTAINER_NAME
-});
-
-// Configuration object with environment variables
-const connectionString = import.meta.env.VITE_COSMOS_DB_CONNECTION_STRING || '';
+// Use our centralized config instead of directly accessing environment variables
+const connectionString = config.cosmos.connectionString;
 const { endpoint, key } = parseConnectionString(connectionString);
 
 const cosmosConfig: CosmosDBConfig = {
   connectionString: connectionString,
-  databaseId: import.meta.env.VITE_COSMOS_DB_DATABASE_NAME || 'pingpongpro',
+  databaseId: config.cosmos.databaseName,
   containersConfig: {
     profiles: {
-      id: import.meta.env.VITE_COSMOS_DB_CONTAINER_NAME || 'profile',
+      id: config.cosmos.containerName,
       partitionKey: '/id'
     },
     matches: {

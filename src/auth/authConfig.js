@@ -1,17 +1,14 @@
 // Microsoft Authentication configuration
+import { config } from '../lib/config';
 
 // Log environment variables being loaded (for debugging)
-console.log("Environment variable check:", {
-  clientIdPresent: !!import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-  clientId: import.meta.env.VITE_MICROSOFT_CLIENT_ID
+console.log("Microsoft Auth configuration status:", {
+  clientIdPresent: !!config.microsoft.clientId
 });
-
-// Ensure client ID is always defined, even if empty (for debugging)
-const msalClientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID || '';
 
 const msalConfig = {
   auth: {
-    clientId: msalClientId, 
+    clientId: config.microsoft.clientId,
     authority: "https://login.microsoftonline.com/consumers/", // Changed to consumers for personal Microsoft accounts
     redirectUri: window.location.origin, // Should match the redirect URI in Azure AD app registration
     postLogoutRedirectUri: window.location.origin,
