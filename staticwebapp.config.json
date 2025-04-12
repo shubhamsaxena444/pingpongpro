@@ -39,8 +39,8 @@
       "azureActiveDirectory": {
         "registration": {
           "openIdIssuer": "https://login.microsoftonline.com/common",
-          "clientIdSettingName": "MICROSOFT_PROVIDER_AUTHENTICATION_ID",
-          "clientSecretSettingName": "MICROSOFT_PROVIDER_AUTHENTICATION_SECRET"
+          "clientIdSettingName": "VITE_MICROSOFT_CLIENT_ID",
+          "clientSecretSettingName": "VITE_MICROSOFT_CLIENT_SECRET"
         }
       }
     }
