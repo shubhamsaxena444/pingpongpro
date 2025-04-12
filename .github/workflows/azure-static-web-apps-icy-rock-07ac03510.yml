@@ -20,25 +20,48 @@ jobs:
           submodules: true
           lfs: false
       
+      # Debug information about the environment
+      - name: Debug information
+        run: |
+          echo "GitHub Repository: $GITHUB_REPOSITORY"
+          echo "Branch: $GITHUB_REF"
+          echo "Actor: $GITHUB_ACTOR"
+          
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
       
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm install --legacy-peer-deps
+      
+      # Test the build process separately
+      - name: Test build
+        run: npm run build
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_COSMOS_DB_CONNECTION_STRING: ${{ secrets.VITE_COSMOS_DB_CONNECTION_STRING }}
+          VITE_COSMOS_DB_DATABASE_NAME: ${{ secrets.VITE_COSMOS_DB_DATABASE_NAME }}
+          VITE_COSMOS_DB_CONTAINER_NAME: ${{ secrets.VITE_COSMOS_DB_CONTAINER_NAME }}
+          VITE_MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_ID }}
+          VITE_MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_SECRET }}
+      
+      - name: List build output
+        run: ls -la dist
           
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ICY_ROCK_07AC03510 }}
+          # Use the general variable name instead of the specific one with app name suffix
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "/"
           api_location: ""
           output_location: "dist"
-          app_build_command: "npm run build"
+          skip_app_build: true # Skip build as we've already built the app
           env_vars: |
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
@@ -47,6 +70,8 @@ jobs:
             VITE_COSMOS_DB_CONTAINER_NAME=${{ secrets.VITE_COSMOS_DB_CONTAINER_NAME }}
             MICROSOFT_PROVIDER_AUTHENTICATION_ID=${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_ID }}
             MICROSOFT_PROVIDER_AUTHENTICATION_SECRET=${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_SECRET }}
+            VITE_MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_ID }}
+            VITE_MICROSOFT_CLIENT_SECRET=${{ secrets.MICROSOFT_PROVIDER_AUTHENTICATION_SECRET }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -57,5 +82,6 @@ jobs:
         id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ICY_ROCK_07AC03510 }}
+          # Use the general variable name here too
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: "close"
