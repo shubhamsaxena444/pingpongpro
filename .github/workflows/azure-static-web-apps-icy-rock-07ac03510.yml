@@ -56,6 +56,10 @@ jobs:
           VITE_COSMOS_DB_CONTAINER_NAME: ${{ secrets.VITE_COSMOS_DB_CONTAINER_NAME }}
           VITE_MICROSOFT_CLIENT_ID: ${{ secrets.VITE_MICROSOFT_CLIENT_ID }}
           VITE_MICROSOFT_CLIENT_SECRET: ${{ secrets.VITE_MICROSOFT_CLIENT_SECRET }}
+          VITE_AZURE_OPENAI_API_KEY: ${{ secrets.VITE_AZURE_OPENAI_API_KEY }}
+          VITE_AZURE_OPENAI_ENDPOINT: ${{ secrets.VITE_AZURE_OPENAI_ENDPOINT }} 
+          VITE_AZURE_OPENAI_MODEL_NAME: ${{ secrets.VITE_AZURE_OPENAI_MODEL_NAME }}
+          VITE_AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.VITE_AZURE_OPENAI_DEPLOYMENT_NAME }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
