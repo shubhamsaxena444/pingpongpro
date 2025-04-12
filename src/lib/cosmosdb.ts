@@ -71,6 +71,13 @@ const parseConnectionString = (connString: string) => {
   }
 };
 
+// Log environment variables for debugging in production (will be removed in builds)
+console.log('Cosmos DB Environment Variables Check:', {
+  connectionStringExists: !!import.meta.env.VITE_COSMOS_DB_CONNECTION_STRING,
+  databaseNameExists: !!import.meta.env.VITE_COSMOS_DB_DATABASE_NAME,
+  containerNameExists: !!import.meta.env.VITE_COSMOS_DB_CONTAINER_NAME
+});
+
 // Configuration object with environment variables
 const connectionString = import.meta.env.VITE_COSMOS_DB_CONNECTION_STRING || '';
 const { endpoint, key } = parseConnectionString(connectionString);
