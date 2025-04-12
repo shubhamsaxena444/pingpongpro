@@ -42,9 +42,17 @@ jobs:
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "/" # App source code path
           api_location: "" # Api source code path - optional
-          output_location: "dist" # Built app content directory - optional
+          output_location: "dist" # Built app content directory - changed from "build" to "dist"
           github_id_token: ${{ steps.idtoken.outputs.result }}
           ###### End of Repository/Build Configurations ######
+          # Pass environment variables to the build
+          app_build_command: "npm run build"
+          env_vars: |
+            VITE_COSMOS_DB_CONNECTION_STRING=${{ secrets.VITE_COSMOS_DB_CONNECTION_STRING }}
+            VITE_COSMOS_DB_DATABASE_NAME=${{ secrets.VITE_COSMOS_DB_DATABASE_NAME }}
+            VITE_COSMOS_DB_CONTAINER_NAME=${{ secrets.VITE_COSMOS_DB_CONTAINER_NAME }}
+            VITE_MICROSOFT_CLIENT_ID=${{ secrets.VITE_MICROSOFT_CLIENT_ID }}
+            VITE_MICROSOFT_CLIENT_SECRET=${{ secrets.VITE_MICROSOFT_CLIENT_SECRET }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
