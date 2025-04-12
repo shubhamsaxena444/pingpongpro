@@ -1,73 +1,102 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import type { User } from '@supabase/supabase-js';
+import { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { auth, IUser } from '../lib/auth';
 
 interface AuthContextType {
-  user: User | null;
+  user: IUser | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  error: string | null;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the authentication context
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+// Custom hook to use the auth context
+export const useAuth = () => useContext(AuthContext);
 
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Auth provider component
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<IUser | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Initialize authentication
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const initializeAuth = async () => {
+      try {
+        // Initialize MSAL
+        auth.initialize();
+        
+        // Check if user is already signed in
+        const currentUser = await auth.getCurrentUser();
+        if (currentUser) {
+          setUser(currentUser);
+        }
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+        setError('Failed to initialize authentication');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+    initializeAuth();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-  };
-
-  const signUp = async (email: string, password: string, username: string) => {
-    // Include the username in user metadata so our trigger can use it
-    const { error: signUpError } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        data: {
-          username: username // This will be available as raw_user_meta_data
-        }
-      }
-    });
+  // Login function
+  const login = async (): Promise<void> => {
+    setLoading(true);
+    setError(null);
     
-    if (signUpError) throw signUpError;
-
-    // The profile will be created automatically by the database trigger
-    // No need to manually insert it here
+    try {
+      const user = await auth.signIn();
+      if (user) {
+        setUser(user);
+      } else {
+        setError('Login failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Failed to log in');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+  // Logout function
+  const logout = async (): Promise<void> => {
+    setLoading(true);
+    
+    try {
+      await auth.signOut();
+      setUser(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+      setError('Failed to log out');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auth context value
+  const value = {
+    user,
+    loading,
+    error,
+    login,
+    logout
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+export default AuthContext;

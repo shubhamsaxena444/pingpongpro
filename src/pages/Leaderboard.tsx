@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { getCosmosDB } from '../lib/cosmosdb';
 import { Link } from 'react-router-dom';
 
 interface PlayerStats {
   id: string;
   username: string;
-  full_name: string | null;
+  displayName: string | null;
   matches_played: number;
   matches_won: number;
   win_rate: number | string;
@@ -26,32 +26,19 @@ function Leaderboard() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
+        const cosmosDB = await getCosmosDB();
+        const profilesContainer = cosmosDB.containers.profiles;
+        const matchesContainer = cosmosDB.containers.matches;
+        
         // Fetch profiles data
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, matches_played, matches_won');
-
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-          
-          if (profilesError.code === 'PGRST301') {
-            setError('Please sign in to view the leaderboard');
-          } else {
-            setError('Failed to load leaderboard. Please try again later.');
-          }
-          return;
-        }
+        const { resources: profilesData } = await profilesContainer.items
+          .query("SELECT c.id, c.username, c.displayName, c.matches_played, c.matches_won FROM c")
+          .fetchAll();
 
         // Fetch matches data
-        const { data: matchesData, error: matchesError } = await supabase
-          .from('matches')
-          .select('*');
-
-        if (matchesError) {
-          console.error('Error fetching matches:', matchesError);
-          setError('Failed to load match statistics. Please try again later.');
-          return;
-        }
+        const { resources: matchesData } = await matchesContainer.items
+          .query("SELECT * FROM c")
+          .fetchAll();
 
         // Process and combine the data
         const enhancedPlayers = profilesData.map(player => {
@@ -81,14 +68,18 @@ function Leaderboard() {
             }
           });
 
-          const avgPointsPerMatch = player.matches_played > 0 
-            ? (totalPointsScored / player.matches_played).toFixed(1) 
+          const matches_played = player.matches_played || 0;
+          const matches_won = player.matches_won || 0;
+          const avgPointsPerMatch = matches_played > 0 
+            ? (totalPointsScored / matches_played).toFixed(1) 
             : '0.0';
           
           return {
             ...player,
-            win_rate: player.matches_played > 0
-              ? ((player.matches_won / player.matches_played) * 100).toFixed(1)
+            matches_played,
+            matches_won,
+            win_rate: matches_played > 0
+              ? ((matches_won / matches_played) * 100).toFixed(1)
               : '0.0',
             points_scored: totalPointsScored,
             points_conceded: totalPointsConceded,
@@ -190,8 +181,8 @@ function Leaderboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{player.username}</div>
-                      {player.full_name && (
-                        <div className="text-sm text-gray-500">{player.full_name}</div>
+                      {player.displayName && (
+                        <div className="text-sm text-gray-500">{player.displayName}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -246,8 +237,8 @@ function Leaderboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{player.username}</div>
-                      {player.full_name && (
-                        <div className="text-sm text-gray-500">{player.full_name}</div>
+                      {player.displayName && (
+                        <div className="text-sm text-gray-500">{player.displayName}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { UserPlus } from 'lucide-react';
+import { getCosmosDB } from '../lib/cosmosdb';
 
 function AddPlayer() {
   const navigate = useNavigate();
@@ -24,36 +24,39 @@ function AddPlayer() {
     setSuccess(null);
 
     try {
+      const cosmosDB = await getCosmosDB();
+      const profilesContainer = cosmosDB.containers.profiles;
+      
       // Check if username already exists
-      const { data: existingUser, error: checkError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', username)
-        .single();
+      const { resources: existingProfiles } = await profilesContainer.items
+        .query({
+          query: "SELECT * FROM c WHERE c.username = @username",
+          parameters: [{ name: "@username", value: username }]
+        })
+        .fetchAll();
       
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means not found, which is good
-        throw checkError;
-      }
-      
-      if (existingUser) {
+      if (existingProfiles.length > 0) {
         setError('Username already exists. Please choose a different one.');
         return;
       }
 
       // Generate a UUID for the player
-      const uuid = crypto.randomUUID();
+      const playerId = crypto.randomUUID();
       
-      // Call the RPC function that has SECURITY DEFINER privileges
-      const { error: rpcError } = await supabase.rpc('create_profile', {
-        user_id: uuid,
-        user_username: username,
-        user_full_name: fullName || null
-      });
+      // Create new player profile
+      const newPlayer = {
+        id: playerId,
+        username: username,
+        displayName: fullName || username,
+        email: null,
+        matches_played: 0,
+        matches_won: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
       
-      if (rpcError) {
-        console.error("RPC error:", rpcError);
-        throw new Error(`Failed to create player: ${rpcError.message}`);
-      }
+      // Add to Cosmos DB
+      await profilesContainer.items.create(newPlayer);
 
       setSuccess(`Player "${username}" added successfully!`);
       
@@ -61,7 +64,7 @@ function AddPlayer() {
       setUsername('');
       setFullName('');
       
-      // Optionally navigate to the leaderboard after a short delay
+      // Navigate to leaderboard after a short delay
       setTimeout(() => {
         navigate('/leaderboard');
       }, 2000);
