@@ -17,12 +17,26 @@ declare global {
 
 // Helper function to get the correct env variable from various sources
 function getEnvVar(key: string): string {
+  // For debugging - log all sources
+  console.log(`Trying to get env var: ${key}`, {
+    windowEnvVarsExists: !!window.ENV_VARS,
+    windowEnvVarValue: window.ENV_VARS?.[key as keyof typeof window.ENV_VARS],
+    viteEnvValue: (import.meta.env as any)[key],
+    processEnvExists: typeof process !== 'undefined' && !!process.env
+  });
+
   // Check environment sources in order of priority
   
   // 1. First check window.ENV_VARS (for runtime injection)
   if (window.ENV_VARS && window.ENV_VARS[key as keyof typeof window.ENV_VARS]) {
-    console.log(`Using runtime injected variable for ${key}`);
-    return window.ENV_VARS[key as keyof typeof window.ENV_VARS] || '';
+    const value = window.ENV_VARS[key as keyof typeof window.ENV_VARS];
+    // Check if the value is a placeholder that wasn't replaced
+    if (value && !value.includes('{{') && !value.includes('}}')) {
+      console.log(`Using runtime injected variable for ${key}`);
+      return value || '';
+    } else {
+      console.warn(`Found placeholder for ${key} that wasn't replaced by Azure Static Web Apps`);
+    }
   }
   
   // 2. Check Vite's import.meta.env
@@ -37,7 +51,10 @@ function getEnvVar(key: string): string {
     return (process.env as any)[key] || '';
   }
 
-  // 4. For local development/testing, could add fallbacks here if needed
+  // 4. Hardcoded fallbacks for development/testing
+  if (key === 'VITE_COSMOS_DB_DATABASE_NAME') return 'pingpongpro';
+  if (key === 'VITE_COSMOS_DB_CONTAINER_NAME') return 'profile';
+
   console.warn(`Environment variable ${key} not found in any source`);
   return '';
 }

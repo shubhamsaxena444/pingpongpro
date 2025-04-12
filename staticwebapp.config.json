@@ -67,5 +67,13 @@
   },
   "platform": {
     "apiRuntime": "node:18"
+  },
+  "globalHeaders": {
+    "Cache-Control": "no-cache"
+  },
+  "staticWebApps": {
+    "placeholders": {
+      "type": "azure-app-settings"
+    }
   }
 }
