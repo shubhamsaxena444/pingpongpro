@@ -19,6 +19,14 @@ jobs:
         with:
           submodules: true
           
+      # Show environment info for debugging
+      - name: Show environment
+        run: |
+          echo "GitHub Repository: $GITHUB_REPOSITORY"
+          echo "GitHub Ref: $GITHUB_REF"
+          echo "GitHub Actor: $GITHUB_ACTOR"
+          echo "GitHub Workflow: $GITHUB_WORKFLOW"
+          
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -28,6 +36,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
       
+      # Deploy with verbose logging
       - name: Deploy to Azure Static Web Apps
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -38,8 +47,10 @@ jobs:
           app_location: "/"
           api_location: ""
           output_location: "dist"
-          skip_deploy_on_missing_secrets: true
+          skip_deploy_on_missing_secrets: false  # Changed to false to fail explicitly if secrets are missing
           app_build_command: "npm run build"
+          deployment_environment: "production"
+          production_branch: "main"
           env_vars: |
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
@@ -60,4 +71,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ICY_ROCK_07AC0350 }}
           action: "close"
-          skip_deploy_on_missing_secrets: true
+          skip_deploy_on_missing_secrets: false  # Changed to false to fail explicitly if secrets are missing
