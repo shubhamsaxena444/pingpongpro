@@ -27,9 +27,13 @@ interface PlayerStats {
   doubles_points_conceded: number;
   doubles_avg_points_per_match: number | string;
   doubles_point_differential: number;
-  // Rating
-  rating: number;
-  ratingCategory: string;
+  // Rating stats - expanded to include all rating types
+  singles_rating: number;
+  doubles_rating: number;
+  overall_rating: number;
+  singles_rating_category: string;
+  doubles_rating_category: string;
+  overall_rating_category: string;
 }
 
 // New interface for team statistics
@@ -47,6 +51,8 @@ interface TeamStats {
   points_conceded: number;
   point_differential: number;
   avg_points_per_match: number | string;
+  team_rating: number;
+  team_rating_category: string;
 }
 
 function Leaderboard() {
@@ -65,9 +71,9 @@ function Leaderboard() {
         const profilesContainer = cosmosDB.containers.profiles;
         const matchesContainer = cosmosDB.containers.matches;
         
-        // Fetch profiles data - now include rating fields
+        // Fetch profiles data with ALL rating fields
         const { resources: profilesData } = await profilesContainer.items
-          .query("SELECT c.id, c.username, c.displayName, c.rating FROM c")
+          .query("SELECT c.id, c.username, c.displayName, c.singles_rating, c.doubles_rating, c.overall_rating, c.singles_rating_category, c.doubles_rating_category, c.overall_rating_category, c.team_partners FROM c")
           .fetchAll();
 
         // Fetch matches data
@@ -180,9 +186,15 @@ function Leaderboard() {
             ? (doublesPointsScored / doubles_matches_played).toFixed(1) 
             : '0.0';
           
-          // Get player rating or use default
-          const rating = player.rating || 1200;
-          const ratingCategory = getRatingCategory(rating);
+          // Get specific rating fields based on match type
+          const singles_rating = player.singles_rating || 1200;
+          const doubles_rating = player.doubles_rating || 1200;
+          const overall_rating = player.overall_rating || 1200;
+          
+          // Get rating categories from the database or generate them
+          const singles_rating_category = player.singles_rating_category || getRatingCategory(singles_rating);
+          const doubles_rating_category = player.doubles_rating_category || getRatingCategory(doubles_rating);
+          const overall_rating_category = player.overall_rating_category || getRatingCategory(overall_rating);
           
           return {
             ...player,
@@ -212,8 +224,12 @@ function Leaderboard() {
             doubles_point_differential: doublesPointsScored - doublesPointsConceded,
             
             // Rating stats
-            rating,
-            ratingCategory
+            singles_rating,
+            doubles_rating,
+            overall_rating,
+            singles_rating_category,
+            doubles_rating_category,
+            overall_rating_category
           };
         });
 
@@ -221,10 +237,24 @@ function Leaderboard() {
         const doublesMatches = matchesData.filter((match: any) => match.match_type === 'doubles');
         const teamStatsMap = new Map<string, TeamStats>();
         
-        // Create a lookup map for player names
+        // Create a lookup map for player names and get team ratings
         const playerLookup = new Map();
+        const teamRatingsMap = new Map<string, {rating: number, category: string}>();
+        
         profilesData.forEach((player: any) => {
           playerLookup.set(player.id, player.displayName || player.username);
+          
+          // Extract team ratings for each partner
+          if (player.team_partners) {
+            Object.entries(player.team_partners).forEach(([partnerId, stats]: [string, any]) => {
+              // Create a unique team key (sorted to ensure same key regardless of order)
+              const teamKey = [player.id, partnerId].sort().join('-');
+              teamRatingsMap.set(teamKey, {
+                rating: stats.team_rating || 1200,
+                category: getRatingCategory(stats.team_rating || 1200)
+              });
+            });
+          }
         });
         
         // Process each doubles match
@@ -247,7 +277,9 @@ function Leaderboard() {
               points_scored: 0,
               points_conceded: 0,
               point_differential: 0,
-              avg_points_per_match: '0.0'
+              avg_points_per_match: '0.0',
+              team_rating: 0,
+              team_rating_category: ''
             });
           }
           
@@ -265,6 +297,11 @@ function Leaderboard() {
           team1Stats.point_differential = team1Stats.points_scored - team1Stats.points_conceded;
           team1Stats.avg_points_per_match = (team1Stats.points_scored / team1Stats.matches_played).toFixed(1);
           team1Stats.win_rate = ((team1Stats.matches_won / team1Stats.matches_played) * 100).toFixed(1);
+
+          // Set the team rating from the teamRatingsMap or use a default
+          const teamRating = teamRatingsMap.get(team1Key) || { rating: 1200, category: 'Intermediate' };
+          team1Stats.team_rating = teamRating.rating;
+          team1Stats.team_rating_category = teamRating.category;
           
           // Process team 2
           const team2Key = [match.team2_player1_id, match.team2_player2_id].sort().join('-');
@@ -284,7 +321,9 @@ function Leaderboard() {
               points_scored: 0,
               points_conceded: 0,
               point_differential: 0,
-              avg_points_per_match: '0.0'
+              avg_points_per_match: '0.0',
+              team_rating: 0,
+              team_rating_category: ''
             });
           }
           
@@ -453,8 +492,8 @@ function Leaderboard() {
                         <div>Wins: {player.matches_won}</div>
                         <div>Losses: {player.matches_lost}</div>
                         <div>
-                          <span className="font-medium" style={{ color: getRatingColor(player.rating) }}>
-                            {player.rating} ({player.ratingCategory})
+                          <span className="font-medium" style={{ color: getRatingColor(player.singles_rating) }}>
+                            {player.singles_rating} ({player.singles_rating_category})
                           </span>
                         </div>
                       </div>
@@ -492,7 +531,11 @@ function Leaderboard() {
                       <div className="grid grid-cols-3 text-sm text-gray-500">
                         <div>Matches: {player.doubles_matches_played}</div>
                         <div>Wins: {player.doubles_matches_won}</div>
-                        <div>Losses: {player.doubles_matches_lost}</div>
+                        <div>
+                          <span className="font-medium" style={{ color: getRatingColor(player.doubles_rating) }}>
+                            {player.doubles_rating} ({player.doubles_rating_category})
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -628,8 +671,8 @@ function Leaderboard() {
                           <div className="text-sm text-gray-900">{player.win_rate}%</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium" style={{ color: getRatingColor(player.rating) }}>
-                            {player.rating} <span className="font-normal text-gray-600">({player.ratingCategory})</span>
+                          <div className="text-sm font-medium" style={{ color: getRatingColor(player.singles_rating) }}>
+                            {player.singles_rating} <span className="font-normal text-gray-600">({player.singles_rating_category})</span>
                           </div>
                         </td>
                       </tr>
@@ -723,6 +766,9 @@ function Leaderboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Win Rate
                       </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -748,6 +794,11 @@ function Leaderboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{player.doubles_win_rate}%</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium" style={{ color: getRatingColor(player.doubles_rating) }}>
+                            {player.doubles_rating} <span className="font-normal text-gray-600">({player.doubles_rating_category})</span>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -833,6 +884,9 @@ function Leaderboard() {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Win Rate
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Rating
                       </th>
                     </tr>
                   </thead>
