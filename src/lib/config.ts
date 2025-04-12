@@ -14,6 +14,7 @@ declare global {
       VITE_AZURE_OPENAI_API_KEY?: string;
       VITE_AZURE_OPENAI_ENDPOINT?: string;
       VITE_AZURE_OPENAI_MODEL_NAME?: string;
+      VITE_AZURE_OPENAI_DEPLOYMENT_NAME?: string;
       VITE_AZURE_OPENAI_API_VERSION?: string;
     };
   }
@@ -34,8 +35,9 @@ function getEnvVar(key: string): string {
   // 1. First check window.ENV_VARS (for runtime injection)
   if (window.ENV_VARS && window.ENV_VARS[key as keyof typeof window.ENV_VARS]) {
     const value = window.ENV_VARS[key as keyof typeof window.ENV_VARS];
-    // Check if the value is a placeholder that wasn't replaced
-    if (value && !value.includes('{{') && !value.includes('}}')) {
+    // We'll accept the value if it's not empty and not obviously a placeholder
+    // A placeholder in Azure Static Web Apps would be exactly "{{ KEY_NAME }}"
+    if (value && !(value.startsWith('{{') && value.endsWith('}}') && value.includes(key))) {
       console.log(`Using runtime injected variable for ${key}`);
       return value || '';
     } else {

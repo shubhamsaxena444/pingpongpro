@@ -24,6 +24,7 @@ interface MatchSummaryRequest {
   team2Score?: number;
   winnerName?: string;
   winnerTeamNames?: string[];
+  commentatorName?: string; // Added commentator name field
 }
 
 /**
@@ -45,6 +46,23 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
 
     console.log('Azure OpenAI request URL:', url);
 
+    // Build the system prompt based on commentator name if provided
+    let systemPrompt = "You are an enthusiastic table tennis commentator who writes brief, exciting summaries of matches.";
+    
+    // Add commentator-specific style guidance if commentator name is provided
+    if (matchDetails.commentatorName) {
+      systemPrompt += ` You are emulating the style of ${matchDetails.commentatorName}.`;
+      
+      // Add specific style instructions for known commentators
+      if (matchDetails.commentatorName.toLowerCase() === "siddhu") {
+        systemPrompt += " Start your commentary with 'O guru!' and use exaggerated expressions throughout.";
+      } else if (matchDetails.commentatorName.toLowerCase() === "john mcenroe") {
+        systemPrompt += " Use passionate and sometimes controversial commentary with phrases like 'You cannot be serious!' when appropriate.";
+      } else if (matchDetails.commentatorName.toLowerCase() === "tony romo") {
+        systemPrompt += " Include predictive analysis and excited exclamations in your commentary style.";
+      }
+    }
+
     let promptText = '';
     if (matchDetails.matchType === 'singles') {
       promptText = `
@@ -53,6 +71,7 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
       Player 2: ${matchDetails.player2Name}
       Final Score: ${matchDetails.player1Score}-${matchDetails.player2Score}
       Winner: ${matchDetails.winnerName}
+      ${matchDetails.commentatorName ? `Commentator: ${matchDetails.commentatorName}` : ''}
       
       Be creative, enthusiastic, and mention the score. Don't use placeholder text.
       `;
@@ -63,6 +82,7 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
       Team 2: ${matchDetails.team2Player1Name} & ${matchDetails.team2Player2Name}
       Final Score: ${matchDetails.team1Score}-${matchDetails.team2Score}
       Winners: ${matchDetails.winnerTeamNames?.join(' & ')}
+      ${matchDetails.commentatorName ? `Commentator: ${matchDetails.commentatorName}` : ''}
       
       Be creative, enthusiastic, and mention the score. Don't use placeholder text.
       `;
@@ -76,7 +96,7 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
       },
       body: JSON.stringify({
         messages: [
-          { role: "system", content: "You are an enthusiastic table tennis commentator who writes brief, exciting summaries of matches." },
+          { role: "system", content: systemPrompt },
           { role: "user", content: promptText }
         ],
         max_tokens: 150,

@@ -60,6 +60,7 @@ jobs:
           VITE_AZURE_OPENAI_ENDPOINT: ${{ secrets.VITE_AZURE_OPENAI_ENDPOINT }} 
           VITE_AZURE_OPENAI_MODEL_NAME: ${{ secrets.VITE_AZURE_OPENAI_MODEL_NAME }}
           VITE_AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.VITE_AZURE_OPENAI_DEPLOYMENT_NAME }}
+          VITE_AZURE_OPENAI_API_VERSION: ${{ secrets.VITE_AZURE_OPENAI_API_VERSION }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

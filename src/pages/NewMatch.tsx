@@ -39,6 +39,9 @@ function NewMatch() {
   const [team1Score, setTeam1Score] = useState<number>(0);
   const [team2Score, setTeam2Score] = useState<number>(0);
   
+  // Commentator name for custom summary
+  const [commentatorName, setCommentatorName] = useState<string>('');
+  
   // Match summary state
   const [matchSummary, setMatchSummary] = useState<string>('');
   const [showSummary, setShowSummary] = useState<boolean>(false);
@@ -70,32 +73,31 @@ function NewMatch() {
   const handleSubmitSingles = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if the same player is selected for both positions
     if (player1 === player2) {
-      setError('Please select different players for the match.');
+      setError('Please select different players.');
       return;
     }
-
+    
     if (player1Score === player2Score) {
       setError('The match cannot end in a tie. One player must win.');
       return;
     }
-
+    
     setSubmitting(true);
     setError(null);
-
+    
     try {
       const cosmosDB = await getCosmosDB();
       const matchesContainer = cosmosDB.containers.matches;
       const profilesContainer = cosmosDB.containers.profiles;
       
-      // Determine the winner and loser
-      const winnerId = player1Score > player2Score ? player1 : player2;
-      const loserId = player1Score > player2Score ? player2 : player1;
+      // Determine the winning player
+      const winningPlayer = player1Score > player2Score ? player1 : player2;
       
       // Get player names for summary
       const player1Name = players.find(p => p.id === player1)?.displayName || players.find(p => p.id === player1)?.username || 'Player 1';
       const player2Name = players.find(p => p.id === player2)?.displayName || players.find(p => p.id === player2)?.username || 'Player 2';
-      const winnerName = players.find(p => p.id === winnerId)?.displayName || players.find(p => p.id === winnerId)?.username || 'Winner';
       
       // Create match record
       const matchId = crypto.randomUUID();
@@ -105,7 +107,7 @@ function NewMatch() {
         player2_id: player2,
         player1_score: player1Score,
         player2_score: player2Score,
-        winner_id: winnerId,
+        winner_id: winningPlayer,
         created_by: user?.id || null,
         played_at: new Date().toISOString(),
         match_type: 'singles' // Specify this is a singles match
@@ -119,12 +121,13 @@ function NewMatch() {
         player2Name,
         player1Score,
         player2Score,
-        winnerName
+        winningPlayerId: winningPlayer, // Changed from winnerId to winningPlayerId
+        commentatorName: commentatorName || undefined  // Pass commentator name if provided
       });
       
       // Store the summary in match data if generated
       if (summary && summary !== "Match summary unavailable (Azure OpenAI not configured)") {
-        matchData.summary = summary;
+        matchData.match_summary = summary; // Changed from .summary to .match_summary
       }
       
       // Add match to Cosmos DB
@@ -139,13 +142,12 @@ function NewMatch() {
       // Update player 1 statistics with rating
       const { resource: player1Profile } = await profilesContainer.item(player1, player1).read();
       if (player1Profile) {
-        const isPlayer1Winner = player1 === winnerId;
+        const isPlayer1Winner = player1 === winningPlayer;
         const updatedPlayer1Profile = updateSinglesRating(
           player1Profile,
           player1PointsScored,
           player1PointsConceded,
-          isPlayer1Winner,
-          false // not doubles
+          isPlayer1Winner
         );
         
         await profilesContainer.item(player1, player1).replace({
@@ -158,13 +160,12 @@ function NewMatch() {
       // Update player 2 statistics with rating
       const { resource: player2Profile } = await profilesContainer.item(player2, player2).read();
       if (player2Profile) {
-        const isPlayer2Winner = player2 === winnerId;
+        const isPlayer2Winner = player2 === winningPlayer;
         const updatedPlayer2Profile = updateSinglesRating(
           player2Profile,
           player2PointsScored,
           player2PointsConceded,
-          isPlayer2Winner,
-          false // not doubles
+          isPlayer2Winner
         );
         
         await profilesContainer.item(player2, player2).replace({
@@ -194,50 +195,38 @@ function NewMatch() {
   const handleSubmitDoubles = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check for duplicate players
-    const allPlayers = [team1Player1, team1Player2, team2Player1, team2Player2];
-    const uniquePlayers = new Set(allPlayers);
+    // Check if the same player is selected for multiple positions
+    const selectedPlayers = [team1Player1, team1Player2, team2Player1, team2Player2];
+    const uniquePlayers = new Set(selectedPlayers);
     
     if (uniquePlayers.size !== 4) {
-      setError('Each player can only participate once. Please select different players for each position.');
+      setError('Please select different players for each position.');
       return;
     }
-
+    
     if (team1Score === team2Score) {
       setError('The match cannot end in a tie. One team must win.');
       return;
     }
-
+    
     setSubmitting(true);
     setError(null);
-
+    
     try {
       const cosmosDB = await getCosmosDB();
       const matchesContainer = cosmosDB.containers.matches;
-      const profilesContainer = cosmosDB.containers.profiles;
+      const profilesContainer = cosmosDB.containers.profiles; // Fixed: Added missing profilesContainer
       
-      // Determine the winner team and player IDs
-      const isTeam1Winner = team1Score > team2Score;
-      const winnerTeam = isTeam1Winner ? 'team1' : 'team2';
-      const winnerIds = isTeam1Winner 
-        ? [team1Player1, team1Player2] 
-        : [team2Player1, team2Player2];
-      const loserIds = isTeam1Winner 
-        ? [team2Player1, team2Player2] 
-        : [team1Player1, team1Player2];
-        
+      // Determine winning team
+      const winningTeam = team1Score > team2Score ? 'team1' : 'team2';
+      
       // Get player names for summary
       const team1Player1Name = players.find(p => p.id === team1Player1)?.displayName || players.find(p => p.id === team1Player1)?.username || 'Team 1 Player 1';
       const team1Player2Name = players.find(p => p.id === team1Player2)?.displayName || players.find(p => p.id === team1Player2)?.username || 'Team 1 Player 2';
       const team2Player1Name = players.find(p => p.id === team2Player1)?.displayName || players.find(p => p.id === team2Player1)?.username || 'Team 2 Player 1';
       const team2Player2Name = players.find(p => p.id === team2Player2)?.displayName || players.find(p => p.id === team2Player2)?.username || 'Team 2 Player 2';
       
-      // Get winner team names
-      const winnerTeamNames = isTeam1Winner 
-        ? [team1Player1Name, team1Player2Name]
-        : [team2Player1Name, team2Player2Name];
-      
-      // Create doubles match record
+      // Create match record
       const matchId = crypto.randomUUID();
       const matchData = {
         id: matchId,
@@ -247,8 +236,7 @@ function NewMatch() {
         team2_player2_id: team2Player2,
         team1_score: team1Score,
         team2_score: team2Score,
-        winner_team: winnerTeam,
-        winner_ids: winnerIds,
+        winning_team: winningTeam,
         created_by: user?.id || null,
         played_at: new Date().toISOString(),
         match_type: 'doubles' // Specify this is a doubles match
@@ -264,16 +252,21 @@ function NewMatch() {
         team2Player2Name,
         team1Score,
         team2Score,
-        winnerTeamNames
+        winningTeam,
+        commentatorName: commentatorName || undefined  // Pass commentator name if provided
       });
       
       // Store the summary in match data if generated
       if (summary && summary !== "Match summary unavailable (Azure OpenAI not configured)") {
-        matchData.summary = summary;
+        // Add summary to match data (using same field name as singles matches)
+        await matchesContainer.items.create({
+          ...matchData,
+          summary // Use same field name as singles matches for consistency
+        });
+      } else {
+        // Add match without summary
+        await matchesContainer.items.create(matchData);
       }
-      
-      // Add match to Cosmos DB
-      await matchesContainer.items.create(matchData);
       
       // Calculate points per player in doubles matches (divide team score)
       // Players on the same team earn equal points
@@ -287,13 +280,13 @@ function NewMatch() {
       for (const playerId of team1PlayerIds) {
         const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
-          const isWinner = isTeam1Winner;
+          const isWinner = winningTeam === 'team1';
           const updatedProfile = updateDoublesRating(
             profile,
             team1PlayerPointsScored,
             team1PlayerPointsConceded,
             isWinner,
-            true // is doubles
+            'doubles' // Pass string instead of boolean
           );
           
           await profilesContainer.item(playerId, playerId).replace({
@@ -309,13 +302,13 @@ function NewMatch() {
       for (const playerId of team2PlayerIds) {
         const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
-          const isWinner = !isTeam1Winner;
+          const isWinner = winningTeam === 'team2';
           const updatedProfile = updateDoublesRating(
             profile,
             team2PlayerPointsScored,
             team2PlayerPointsConceded,
             isWinner,
-            true // is doubles
+            'doubles' // Pass string instead of boolean
           );
           
           await profilesContainer.item(playerId, playerId).replace({
@@ -529,15 +522,29 @@ function NewMatch() {
                 </div>
               </div>
               
-              <div className="mt-4 md:mt-6">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 text-sm md:text-base"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Singles Match'}
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                  Commentator Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={commentatorName}
+                  onChange={(e) => setCommentatorName(e.target.value)}
+                  placeholder="e.g. Siddhu, John McEnroe"
+                  className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enter a commentator name to personalize the match summary style
+                </p>
               </div>
+              
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300"
+              >
+                {submitting ? 'Recording Match...' : 'Record Match'}
+              </button>
             </form>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -657,6 +664,20 @@ function NewMatch() {
                     required
                   />
                 </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                  Commentator Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={commentatorName}
+                  onChange={(e) => setCommentatorName(e.target.value)}
+                  placeholder="e.g. Siddhu, John McEnroe"
+                  className="w-full px-3 py-2 text-gray-700 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
+                />
+                <p className="mt-1 text-xs text-gray-500">Add a commentator to style the match summary</p>
               </div>
               
               <div className="mt-4 md:mt-6">

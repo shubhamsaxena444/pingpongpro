@@ -21,6 +21,11 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_MICROSOFT_CLIENT_SECRET': JSON.stringify(env.VITE_MICROSOFT_CLIENT_SECRET || ''),
       'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL || ''),
       'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY || ''),
+      'import.meta.env.VITE_AZURE_OPENAI_API_KEY': JSON.stringify(env.VITE_AZURE_OPENAI_API_KEY || ''),
+      'import.meta.env.VITE_AZURE_OPENAI_ENDPOINT': JSON.stringify(env.VITE_AZURE_OPENAI_ENDPOINT || ''),
+      'import.meta.env.VITE_AZURE_OPENAI_MODEL_NAME': JSON.stringify(env.VITE_AZURE_OPENAI_MODEL_NAME || ''),
+      'import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT_NAME': JSON.stringify(env.VITE_AZURE_OPENAI_DEPLOYMENT_NAME || ''),
+      'import.meta.env.VITE_AZURE_OPENAI_API_VERSION': JSON.stringify(env.VITE_AZURE_OPENAI_API_VERSION || '2023-05-15'),
     },
     server: {
       host: true, // This binds to all available network interfaces (0.0.0.0)
