@@ -5,6 +5,7 @@ interface AzureOpenAIConfig {
   apiKey: string;
   endpoint: string;
   modelName: string;
+  deploymentName: string;
   apiVersion: string;
 }
 
@@ -37,8 +38,12 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
       return "Match summary unavailable (Azure OpenAI not configured)";
     }
 
-    const { endpoint, apiKey, modelName, apiVersion } = azureConfig;
-    const url = `${endpoint}/openai/deployments/${modelName}/chat/completions?api-version=${apiVersion}`;
+    const { endpoint, apiKey, deploymentName, apiVersion } = azureConfig;
+    // Remove trailing slashes from endpoint to avoid double slash issues
+    const cleanEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+    const url = `${cleanEndpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
+
+    console.log('Azure OpenAI request URL:', url);
 
     let promptText = '';
     if (matchDetails.matchType === 'singles') {
@@ -80,7 +85,8 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
     });
 
     if (!response.ok) {
-      console.error('Azure OpenAI API error:', await response.text());
+      const errorText = await response.text();
+      console.error('Azure OpenAI API error:', errorText);
       return "Match summary unavailable (API error)";
     }
 
@@ -96,17 +102,22 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
  * Check if Azure OpenAI configuration is valid and complete
  */
 function isConfigValid(config: AzureOpenAIConfig): boolean {
-  return !!(config.apiKey && config.endpoint && config.modelName);
+  return !!(config.apiKey && config.endpoint && config.deploymentName);
 }
 
 /**
  * Get Azure OpenAI configuration from environment 
  */
 function getAzureOpenAIConfig(): AzureOpenAIConfig {
+  // Use model name for deployment if not explicitly configured
+  const modelName = config.azureOpenai?.modelName || 'gpt-35-turbo';
+  const deploymentName = config.azureOpenai?.deploymentName || modelName;
+  
   return {
     apiKey: config.azureOpenai?.apiKey || '',
     endpoint: config.azureOpenai?.endpoint || '',
-    modelName: config.azureOpenai?.modelName || '',
+    modelName: modelName,
+    deploymentName: deploymentName,
     apiVersion: config.azureOpenai?.apiVersion || '2023-05-15'
   };
 }

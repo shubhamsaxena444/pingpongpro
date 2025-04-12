@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCosmosDB } from '../lib/cosmosdb';
 import { useAuth } from '../contexts/AuthContext';
-import { updatePlayerRating } from '../lib/rating';
+import { 
+  updateSinglesRating, 
+  updateDoublesRating
+} from '../lib/rating';
 import { generateMatchSummary } from '../lib/azureOpenai';
 
 interface Player {
@@ -137,7 +140,7 @@ function NewMatch() {
       const { resource: player1Profile } = await profilesContainer.item(player1, player1).read();
       if (player1Profile) {
         const isPlayer1Winner = player1 === winnerId;
-        const updatedPlayer1Profile = updatePlayerRating(
+        const updatedPlayer1Profile = updateSinglesRating(
           player1Profile,
           player1PointsScored,
           player1PointsConceded,
@@ -156,7 +159,7 @@ function NewMatch() {
       const { resource: player2Profile } = await profilesContainer.item(player2, player2).read();
       if (player2Profile) {
         const isPlayer2Winner = player2 === winnerId;
-        const updatedPlayer2Profile = updatePlayerRating(
+        const updatedPlayer2Profile = updateSinglesRating(
           player2Profile,
           player2PointsScored,
           player2PointsConceded,
@@ -285,7 +288,7 @@ function NewMatch() {
         const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
           const isWinner = isTeam1Winner;
-          const updatedProfile = updatePlayerRating(
+          const updatedProfile = updateDoublesRating(
             profile,
             team1PlayerPointsScored,
             team1PlayerPointsConceded,
@@ -307,7 +310,7 @@ function NewMatch() {
         const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
           const isWinner = !isTeam1Winner;
-          const updatedProfile = updatePlayerRating(
+          const updatedProfile = updateDoublesRating(
             profile,
             team2PlayerPointsScored,
             team2PlayerPointsConceded,

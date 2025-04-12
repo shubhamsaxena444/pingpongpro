@@ -1,6 +1,17 @@
 import { CosmosClient, Database, Container } from '@azure/cosmos';
 import { config } from './config';
 
+// Team partner statistics tracking
+export interface TeamPartnerStats {
+  partnerId: string;         // ID of the partner player
+  matches_played: number;    // Matches played together
+  matches_won: number;       // Matches won together
+  team_rating: number;       // Team-specific rating
+  points_scored: number;     // Points scored as a team
+  points_conceded: number;   // Points conceded as a team
+  last_played?: string;      // Last time this team played together
+}
+
 // Define interfaces for our data models
 export interface IProfile {
   id: string;
@@ -11,11 +22,26 @@ export interface IProfile {
   matches_won?: number;
   doubles_matches_played?: number;  // Added for doubles stats
   doubles_matches_won?: number;     // Added for doubles stats
-  rating?: number;                 // Player skill rating based on points
+  
+  // Individual ratings
+  singles_rating?: number;        // Rating for singles matches
+  doubles_rating?: number;        // Rating for doubles matches as an individual
+  overall_rating?: number;        // Combined/weighted overall player rating
+  
+  // Points tracking
   singles_points_scored?: number;  // Total singles points scored
   singles_points_conceded?: number; // Total singles points conceded
   doubles_points_scored?: number;  // Total doubles points scored
   doubles_points_conceded?: number; // Total doubles points conceded
+  
+  // Rating categories
+  singles_rating_category?: string;  // Category label for singles rating
+  doubles_rating_category?: string;  // Category label for doubles rating
+  overall_rating_category?: string;  // Category label for overall rating
+  
+  // Team data
+  team_partners?: Record<string, TeamPartnerStats>; // Stats with different partners
+  
   created_at?: string;
   updated_at?: string;
 }

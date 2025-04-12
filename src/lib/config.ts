@@ -78,6 +78,7 @@ export const config = {
     apiKey: getEnvVar('VITE_AZURE_OPENAI_API_KEY'),
     endpoint: getEnvVar('VITE_AZURE_OPENAI_ENDPOINT'),
     modelName: getEnvVar('VITE_AZURE_OPENAI_MODEL_NAME'),
+    deploymentName: getEnvVar('VITE_AZURE_OPENAI_DEPLOYMENT_NAME') || getEnvVar('VITE_AZURE_OPENAI_MODEL_NAME'),
     apiVersion: getEnvVar('VITE_AZURE_OPENAI_API_VERSION') || '2023-05-15',
   }
 };
@@ -97,6 +98,7 @@ console.log('Configuration status:', {
     apiKeyPresent: !!config.azureOpenai.apiKey,
     endpointPresent: !!config.azureOpenai.endpoint,
     modelNamePresent: !!config.azureOpenai.modelName,
+    deploymentNamePresent: !!config.azureOpenai.deploymentName,
     apiVersion: config.azureOpenai.apiVersion
   }
 });
