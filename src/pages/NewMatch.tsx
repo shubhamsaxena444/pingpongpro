@@ -255,11 +255,11 @@ function NewMatch() {
         team2_player2_id: string;
         team1_score: number;
         team2_score: number;
-        winning_team: string;
+        winner_team: string; // Changed from winning_team to winner_team for consistency
         created_by: string | null;
         played_at: string;
         match_type: string;
-        summary?: string; // Make the summary property optional
+        match_summary?: string;
       } = {
         id: matchId,
         team1_player1_id: team1Player1,
@@ -268,7 +268,7 @@ function NewMatch() {
         team2_player2_id: team2Player2,
         team1_score: team1Score,
         team2_score: team2Score,
-        winning_team: winningTeam,
+        winner_team: winningTeam, // Changed from winning_team to winner_team
         created_by: user?.id || null,
         played_at: new Date().toISOString(),
         match_type: 'doubles' // Specify this is a doubles match
@@ -305,7 +305,7 @@ function NewMatch() {
         // Add summary to match data (using same field name as singles matches)
         await matchesContainer.items.create({
           ...matchData,
-          summary // Use same field name as singles matches for consistency
+          match_summary: summary // Assign the summary to match_summary field
         });
       } else {
         // Add match without summary

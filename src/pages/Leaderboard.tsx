@@ -158,6 +158,7 @@ function Leaderboard() {
             const onTeam1 = match.team1_player1_id === player.id || match.team1_player2_id === player.id;
             
             // Did this player's team win?
+            // Fixed: Use winner_team instead of winning_team
             const playerTeamWon = (onTeam1 && match.winner_team === 'team1') || 
                                  (!onTeam1 && match.winner_team === 'team2');
             

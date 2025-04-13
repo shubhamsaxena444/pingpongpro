@@ -68,11 +68,12 @@ export interface IDoublesMatch {
   team2_player2_id: string;
   team1_score: number;
   team2_score: number;
-  winner_team: 'team1' | 'team2';  // Identifies which team won
-  winner_ids: string[];           // IDs of the players in the winning team
+  winner_team: 'team1' | 'team2';  // Consistent name: winner_team, not winning_team
+  winner_ids?: string[];           // IDs of the players in the winning team (optional)
   created_by?: string;
   played_at: string;
   match_type: 'doubles';          // Identifies this as a doubles match
+  match_summary?: string;         // Match summary field
 }
 
 // Union type for any match type

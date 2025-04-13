@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Table as TableTennis, Trophy, LogIn, LogOut, UserPlus, PlusCircle, Menu, X } from 'lucide-react';
+import { Table as TableTennis, Trophy, LogIn, LogOut, UserPlus, PlusCircle, Menu, X, List } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
@@ -54,6 +54,13 @@ export default function Navbar() {
                 >
                   <PlusCircle className="h-5 w-5" />
                   <span>Record Match</span>
+                </Link>
+                <Link
+                  to="/all-matches"
+                  className="flex items-center space-x-1 text-gray-700 hover:text-purple-600"
+                >
+                  <List className="h-5 w-5" />
+                  <span>All Matches</span>
                 </Link>
                 <Link
                   to="/add-player"
@@ -120,6 +127,16 @@ export default function Navbar() {
                   <div className="flex items-center space-x-2">
                     <PlusCircle className="h-5 w-5" />
                     <span>Record Match</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/all-matches"
+                  className="block py-2 text-gray-700 hover:text-purple-600"
+                  onClick={closeMobileMenu}
+                >
+                  <div className="flex items-center space-x-2">
+                    <List className="h-5 w-5" />
+                    <span>All Matches</span>
                   </div>
                 </Link>
                 <Link

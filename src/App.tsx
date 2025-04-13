@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NewMatch from './pages/NewMatch';
 import AddPlayer from './pages/AddPlayer';
+import AllMatches from './pages/AllMatches';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
@@ -27,6 +28,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <NewMatch />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/all-matches"
+                element={
+                  <PrivateRoute>
+                    <AllMatches />
                   </PrivateRoute>
                 }
               />
