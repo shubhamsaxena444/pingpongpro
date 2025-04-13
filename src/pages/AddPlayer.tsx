@@ -51,6 +51,17 @@ function AddPlayer() {
         email: null,
         matches_played: 0,
         matches_won: 0,
+        matches_lost: 0,
+        singles_points_scored: 0,
+        singles_points_conceded: 0,
+        doubles_points_scored: 0,
+        doubles_points_conceded: 0,
+        singles_rating: 1200,
+        doubles_rating: 1200,
+        overall_rating: 1200,
+        doubles_matches_played: 0,
+        doubles_matches_won: 0,
+        doubles_matches_lost: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };

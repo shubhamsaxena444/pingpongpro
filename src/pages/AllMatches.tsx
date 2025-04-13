@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCosmosDB, IMatch, IDoublesMatch, isSinglesMatch, isDoublesMatch } from '../lib/cosmosdb';
 import { useAuth } from '../contexts/AuthContext';
-import { generateMatchSummary } from '../lib/azureOpenai';
 
 // Update the core interfaces to include match_summary
 interface IMatchWithSummary extends IMatch {
@@ -57,9 +56,6 @@ function AllMatches() {
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState<string | null>(null);
-  const [commentator, setCommentator] = useState<string>('');
-  const [expandedSummaries, setExpandedSummaries] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchData();
@@ -172,6 +168,7 @@ function AllMatches() {
             ...player1Profile,
             matches_played: Math.max(0, (player1Profile.matches_played || 0) - 1),
             matches_won: isPlayer1Winner ? Math.max(0, (player1Profile.matches_won || 0) - 1) : (player1Profile.matches_won || 0),
+            matches_lost: !isPlayer1Winner ? Math.max(0, (player1Profile.matches_lost || 0) - 1) : (player1Profile.matches_lost || 0),
             // Reset rating to default if this is the last match, otherwise just revert it slightly
             singles_rating: player1Profile.matches_played <= 1 ? 1200 : Math.round(player1Profile.singles_rating - (isPlayer1Winner ? 15 : -15)),
             // Subtract points scored and conceded
@@ -198,6 +195,7 @@ function AllMatches() {
             ...player2Profile,
             matches_played: Math.max(0, (player2Profile.matches_played || 0) - 1),
             matches_won: isPlayer2Winner ? Math.max(0, (player2Profile.matches_won || 0) - 1) : (player2Profile.matches_won || 0),
+            matches_lost: !isPlayer2Winner ? Math.max(0, (player2Profile.matches_lost || 0) - 1) : (player2Profile.matches_lost || 0),
             // Reset rating to default if this is the last match, otherwise just revert it slightly
             singles_rating: player2Profile.matches_played <= 1 ? 1200 : Math.round(player2Profile.singles_rating - (isPlayer2Winner ? 15 : -15)),
             // Subtract points scored and conceded
@@ -270,6 +268,7 @@ function AllMatches() {
               ...updatedProfile,
               doubles_matches_played: Math.max(0, (profile.doubles_matches_played || 0) - 1),
               doubles_matches_won: isWinner ? Math.max(0, (profile.doubles_matches_won || 0) - 1) : (profile.doubles_matches_won || 0),
+              doubles_matches_lost: !isWinner ? Math.max(0, (profile.doubles_matches_lost || 0) - 1) : (profile.doubles_matches_lost || 0),
               doubles_rating: newDoublesRating,
               doubles_points_scored: Math.max(0, (profile.doubles_points_scored || 0) - team1PlayerPoints),
               doubles_points_conceded: Math.max(0, (profile.doubles_points_conceded || 0) - team1PlayerConceded),
@@ -324,6 +323,7 @@ function AllMatches() {
               ...updatedProfile,
               doubles_matches_played: Math.max(0, (profile.doubles_matches_played || 0) - 1),
               doubles_matches_won: isWinner ? Math.max(0, (profile.doubles_matches_won || 0) - 1) : (profile.doubles_matches_won || 0),
+              doubles_matches_lost: !isWinner ? Math.max(0, (profile.doubles_matches_lost || 0) - 1) : (profile.doubles_matches_lost || 0),
               doubles_rating: newDoublesRating,
               doubles_points_scored: Math.max(0, (profile.doubles_points_scored || 0) - team2PlayerPoints),
               doubles_points_conceded: Math.max(0, (profile.doubles_points_conceded || 0) - team2PlayerConceded),
