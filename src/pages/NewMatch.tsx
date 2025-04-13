@@ -325,16 +325,50 @@ function NewMatch() {
         const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
           const isWinner = winningTeam === 'team1';
-          const updatedProfile = updateDoublesRating(
-            profile,
+          
+          // Get the team partner ID - the other player in the team
+          const partnerId = playerId === team1Player1 ? team1Player2 : team1Player1;
+          
+          // Create updated profile with team partners section
+          const updatedProfile = {
+            ...profile,
+            team_partners: { ...(profile.team_partners || {}) }
+          };
+          
+          // Update or create team partners stats
+          if (!updatedProfile.team_partners[partnerId]) {
+            updatedProfile.team_partners[partnerId] = {
+              partnerId: partnerId,
+              matches_played: 0,
+              matches_won: 0,
+              team_rating: 1200,
+              points_scored: 0,
+              points_conceded: 0,
+              last_played: new Date().toISOString()
+            };
+          }
+          
+          // Update existing team partner stats
+          const teamStats = updatedProfile.team_partners[partnerId];
+          teamStats.matches_played += 1;
+          if (isWinner) teamStats.matches_won += 1;
+          teamStats.points_scored += team1Score;
+          teamStats.points_conceded += team2Score;
+          teamStats.last_played = new Date().toISOString();
+          
+          // Simple rating update for team rating
+          teamStats.team_rating += isWinner ? 15 : -15;
+          
+          const updatedProfile2 = updateDoublesRating(
+            updatedProfile,
             team1PlayerPointsScored,
             team1PlayerPointsConceded,
             isWinner,
-            'doubles' // Pass string instead of boolean
+            partnerId  // Use actual partner ID instead of hardcoded 'doubles'
           );
           
           await profilesContainer.item(playerId, playerId).replace({
-            ...updatedProfile,
+            ...updatedProfile2,
             doubles_matches_played: (profile.doubles_matches_played || 0) + 1,
             doubles_matches_won: isWinner ? (profile.doubles_matches_won || 0) + 1 : (profile.doubles_matches_won || 0),
           });
@@ -347,16 +381,50 @@ function NewMatch() {
         const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
         if (profile) {
           const isWinner = winningTeam === 'team2';
-          const updatedProfile = updateDoublesRating(
-            profile,
+          
+          // Get the team partner ID - the other player in the team
+          const partnerId = playerId === team2Player1 ? team2Player2 : team2Player1;
+          
+          // Create updated profile with team partners section
+          const updatedProfile = {
+            ...profile,
+            team_partners: { ...(profile.team_partners || {}) }
+          };
+          
+          // Update or create team partners stats
+          if (!updatedProfile.team_partners[partnerId]) {
+            updatedProfile.team_partners[partnerId] = {
+              partnerId: partnerId,
+              matches_played: 0,
+              matches_won: 0,
+              team_rating: 1200,
+              points_scored: 0,
+              points_conceded: 0,
+              last_played: new Date().toISOString()
+            };
+          }
+          
+          // Update existing team partner stats
+          const teamStats = updatedProfile.team_partners[partnerId];
+          teamStats.matches_played += 1;
+          if (isWinner) teamStats.matches_won += 1;
+          teamStats.points_scored += team2Score;
+          teamStats.points_conceded += team1Score;
+          teamStats.last_played = new Date().toISOString();
+          
+          // Simple rating update for team rating
+          teamStats.team_rating += isWinner ? 15 : -15;
+          
+          const updatedProfile2 = updateDoublesRating(
+            updatedProfile,
             team2PlayerPointsScored,
             team2PlayerPointsConceded,
             isWinner,
-            'doubles' // Pass string instead of boolean
+            partnerId  // Use actual partner ID instead of hardcoded 'doubles'
           );
           
           await profilesContainer.item(playerId, playerId).replace({
-            ...updatedProfile,
+            ...updatedProfile2,
             doubles_matches_played: (profile.doubles_matches_played || 0) + 1,
             doubles_matches_won: isWinner ? (profile.doubles_matches_won || 0) + 1 : (profile.doubles_matches_won || 0),
           });

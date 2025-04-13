@@ -27,6 +27,14 @@ interface MatchSummaryRequest {
   commentatorName?: string; // Added commentator name field
 }
 
+// Leaderboard summary request interface
+interface LeaderboardSummaryRequest {
+  leaderboardType: 'singles' | 'doubles' | 'teams';
+  viewType: 'wins' | 'points';
+  topPlayers: any[]; // Top 5 players or teams from the leaderboard
+  totalPlayers: number; // Total count of players or teams
+}
+
 /**
  * Generate an AI summary of a table tennis match
  * @param matchDetails Details about the match
@@ -115,6 +123,88 @@ export async function generateMatchSummary(matchDetails: MatchSummaryRequest): P
   } catch (error) {
     console.error('Error generating match summary:', error);
     return "Match summary unavailable (Error occurred)";
+  }
+}
+
+/**
+ * Generate an AI summary of a leaderboard
+ * @param leaderboardDetails Details about the leaderboard
+ * @returns Promise with the generated summary text
+ */
+export async function generateLeaderboardSummary(leaderboardDetails: LeaderboardSummaryRequest): Promise<string> {
+  try {
+    const azureConfig = getAzureOpenAIConfig();
+    if (!isConfigValid(azureConfig)) {
+      return "Leaderboard summary unavailable (Azure OpenAI not configured)";
+    }
+
+    const { endpoint, apiKey, deploymentName, apiVersion } = azureConfig;
+    // Remove trailing slashes from endpoint to avoid double slash issues
+    const cleanEndpoint = endpoint.endsWith('/') ? endpoint.slice(0, -1) : endpoint;
+    const url = `${cleanEndpoint}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
+
+    console.log('Azure OpenAI leaderboard summary request URL:', url);
+
+    const systemPrompt = "You are an insightful table tennis analyst who provides brief, data-driven summaries of leaderboard standings. You highlight trends, notable performances, and interesting statistics.";
+    
+    // Format the top players data for the prompt
+    const topPlayersText = leaderboardDetails.topPlayers.map((player, index) => {
+      if (leaderboardDetails.leaderboardType === 'singles') {
+        return `#${index + 1}: ${player.username || player.displayName} - ${leaderboardDetails.viewType === 'wins' ? 
+          `${player.matches_won} wins (${player.win_rate}% win rate)` : 
+          `${player.point_differential > 0 ? '+' : ''}${player.point_differential} point differential`}`;
+      } else if (leaderboardDetails.leaderboardType === 'doubles') {
+        return `#${index + 1}: ${player.username || player.displayName} - ${leaderboardDetails.viewType === 'wins' ? 
+          `${player.doubles_matches_won} wins (${player.doubles_win_rate}% win rate)` : 
+          `${player.doubles_point_differential > 0 ? '+' : ''}${player.doubles_point_differential} point differential`}`;
+      } else { // teams
+        return `#${index + 1}: ${player.player1Name} & ${player.player2Name} - ${leaderboardDetails.viewType === 'wins' ? 
+          `${player.matches_won} wins (${player.win_rate}% win rate)` : 
+          `${player.point_differential > 0 ? '+' : ''}${player.point_differential} point differential`}`;
+      }
+    }).join('\n');
+
+    const promptText = `
+    Generate a brief (3-4 sentences) analytical summary of the current table tennis ${leaderboardDetails.leaderboardType} leaderboard:
+    
+    Leaderboard type: ${leaderboardDetails.leaderboardType}
+    View type: ${leaderboardDetails.viewType} (${leaderboardDetails.viewType === 'wins' ? 'win rate' : 'point differential'})
+    Total participants: ${leaderboardDetails.totalPlayers}
+    
+    Top participants:
+    ${topPlayersText}
+    
+    Focus on: current standings, notable performances, interesting trends, and what makes the top players successful.
+    Keep your analysis brief but insightful. Include the date April 13, 2025 as the current date.
+    `;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: promptText }
+        ],
+        max_tokens: 200,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Azure OpenAI API error:', errorText);
+      return "Leaderboard summary unavailable (API error)";
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Error generating leaderboard summary:', error);
+    return "Leaderboard summary unavailable (Error occurred)";
   }
 }
 

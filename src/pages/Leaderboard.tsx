@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, BarChart2 } from 'lucide-react';
 import { getCosmosDB, IMatch, IDoublesMatch } from '../lib/cosmosdb';
 import { Link } from 'react-router-dom';
 import { getRatingCategory, getRatingColor } from '../lib/rating';
+import { generateLeaderboardSummary } from '../lib/azureOpenai';
 
 interface PlayerStats {
   id: string;
@@ -53,6 +54,94 @@ interface TeamStats {
   avg_points_per_match: number | string;
   team_rating: number;
   team_rating_category: string;
+}
+
+// LeaderboardSummary component to display AI-generated insights
+interface LeaderboardSummaryProps {
+  players: PlayerStats[];
+  teams: TeamStats[];
+  activeTab: 'singles' | 'doubles';
+  doublesView: 'players' | 'teams';
+  statView: 'wins' | 'points';
+}
+
+function LeaderboardSummary({ players, teams, activeTab, doublesView, statView }: LeaderboardSummaryProps) {
+  const [summary, setSummary] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    async function fetchSummary() {
+      setLoading(true);
+      try {
+        // Determine which data to use based on current view
+        let data: any[] = [];
+        let leaderboardType: 'singles' | 'doubles' | 'teams' = 'singles';
+        
+        if (activeTab === 'singles') {
+          data = players;
+          leaderboardType = 'singles';
+        } else if (activeTab === 'doubles' && doublesView === 'players') {
+          data = players;
+          leaderboardType = 'doubles';
+        } else {
+          data = teams;
+          leaderboardType = 'teams';
+        }
+        
+        // Only proceed if we have data
+        if (data.length === 0) {
+          setSummary('No data available for AI analysis yet. Start playing matches to see insights here!');
+          setLoading(false);
+          return;
+        }
+        
+        // Get top 5 players or teams
+        const topData = data.slice(0, 5);
+        
+        // Generate the summary
+        const summaryText = await generateLeaderboardSummary({
+          leaderboardType,
+          viewType: statView,
+          topPlayers: topData,
+          totalPlayers: data.length
+        });
+        
+        setSummary(summaryText);
+      } catch (error) {
+        console.error('Error generating leaderboard summary:', error);
+        setSummary('AI analysis unavailable. Try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchSummary();
+  }, [players, teams, activeTab, doublesView, statView]);
+
+  return (
+    <div className="bg-blue-50 p-4 md:p-6 mt-4 rounded-lg shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <BarChart2 className="h-5 w-5 text-blue-600" />
+        <h3 className="text-lg font-medium text-gray-900">AI Leaderboard Analysis</h3>
+      </div>
+      
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-pulse flex space-x-2">
+            <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
+            <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
+            <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-700">{summary}</p>
+      )}
+      
+      <div className="mt-2 text-xs text-gray-500">
+        Analysis as of April 13, 2025 • Powered by Azure OpenAI
+      </div>
+    </div>
+  );
 }
 
 function Leaderboard() {
@@ -1005,6 +1094,14 @@ function Leaderboard() {
           </Link>
         </div>
       )}
+
+      <LeaderboardSummary 
+        players={players} 
+        teams={teams} 
+        activeTab={activeTab} 
+        doublesView={doublesView} 
+        statView={statView} 
+      />
     </div>
   );
 }

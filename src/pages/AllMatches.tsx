@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCosmosDB, IMatch, IDoublesMatch, isSinglesMatch, isDoublesMatch } from '../lib/cosmosdb';
 import { useAuth } from '../contexts/AuthContext';
+import { generateMatchSummary } from '../lib/azureOpenai';
 
 // Update the core interfaces to include match_summary
 interface IMatchWithSummary extends IMatch {
@@ -56,6 +57,9 @@ function AllMatches() {
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState<string | null>(null);
+  const [commentator, setCommentator] = useState<string>('');
+  const [expandedSummaries, setExpandedSummaries] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchData();
@@ -161,10 +165,25 @@ function AllMatches() {
         const { resource: player1Profile } = await profilesContainer.item(matchToDelete.player1_id, matchToDelete.player1_id).read();
         if (player1Profile) {
           const isPlayer1Winner = matchToDelete.player1_id === matchToDelete.winner_id;
+          const player1PointsScored = matchToDelete.player1_score || 0;
+          const player1PointsConceded = matchToDelete.player2_score || 0;
+          
           await profilesContainer.item(matchToDelete.player1_id, matchToDelete.player1_id).replace({
             ...player1Profile,
             matches_played: Math.max(0, (player1Profile.matches_played || 0) - 1),
             matches_won: isPlayer1Winner ? Math.max(0, (player1Profile.matches_won || 0) - 1) : (player1Profile.matches_won || 0),
+            // Reset rating to default if this is the last match, otherwise just revert it slightly
+            singles_rating: player1Profile.matches_played <= 1 ? 1200 : Math.round(player1Profile.singles_rating - (isPlayer1Winner ? 15 : -15)),
+            // Subtract points scored and conceded
+            singles_points_scored: Math.max(0, (player1Profile.singles_points_scored || 0) - player1PointsScored),
+            singles_points_conceded: Math.max(0, (player1Profile.singles_points_conceded || 0) - player1PointsConceded),
+            // Update overall rating
+            overall_rating: recalculateOverallRating(
+              player1Profile.matches_played <= 1 ? 1200 : Math.round(player1Profile.singles_rating - (isPlayer1Winner ? 15 : -15)),
+              player1Profile.doubles_rating || 1200,
+              Math.max(0, (player1Profile.matches_played || 0) - 1),
+              player1Profile.doubles_matches_played || 0
+            )
           });
         }
         
@@ -172,10 +191,25 @@ function AllMatches() {
         const { resource: player2Profile } = await profilesContainer.item(matchToDelete.player2_id, matchToDelete.player2_id).read();
         if (player2Profile) {
           const isPlayer2Winner = matchToDelete.player2_id === matchToDelete.winner_id;
+          const player2PointsScored = matchToDelete.player2_score || 0;
+          const player2PointsConceded = matchToDelete.player1_score || 0;
+          
           await profilesContainer.item(matchToDelete.player2_id, matchToDelete.player2_id).replace({
             ...player2Profile,
             matches_played: Math.max(0, (player2Profile.matches_played || 0) - 1),
             matches_won: isPlayer2Winner ? Math.max(0, (player2Profile.matches_won || 0) - 1) : (player2Profile.matches_won || 0),
+            // Reset rating to default if this is the last match, otherwise just revert it slightly
+            singles_rating: player2Profile.matches_played <= 1 ? 1200 : Math.round(player2Profile.singles_rating - (isPlayer2Winner ? 15 : -15)),
+            // Subtract points scored and conceded
+            singles_points_scored: Math.max(0, (player2Profile.singles_points_scored || 0) - player2PointsScored),
+            singles_points_conceded: Math.max(0, (player2Profile.singles_points_conceded || 0) - player2PointsConceded),
+            // Update overall rating
+            overall_rating: recalculateOverallRating(
+              player2Profile.matches_played <= 1 ? 1200 : Math.round(player2Profile.singles_rating - (isPlayer2Winner ? 15 : -15)),
+              player2Profile.doubles_rating || 1200,
+              Math.max(0, (player2Profile.matches_played || 0) - 1),
+              player2Profile.doubles_matches_played || 0
+            )
           });
         }
       } else if (matchToDelete.match_type === 'doubles' && 
@@ -187,16 +221,65 @@ function AllMatches() {
         const team1PlayerIds = [matchToDelete.team1_player1_id, matchToDelete.team1_player2_id];
         const team2PlayerIds = [matchToDelete.team2_player1_id, matchToDelete.team2_player2_id];
         
+        const team1Score = matchToDelete.team1_score || 0;
+        const team2Score = matchToDelete.team2_score || 0;
+        
+        // Points per player are half of team score
+        const team1PlayerPoints = team1Score / 2;
+        const team1PlayerConceded = team2Score / 2;
+        const team2PlayerPoints = team2Score / 2;
+        const team2PlayerConceded = team1Score / 2;
+        
         // Update team 1 players
         for (const playerId of team1PlayerIds) {
           const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
           if (profile) {
-            // Fixed: Use winner_team instead of winning_team
             const isWinner = matchToDelete.winner_team === 'team1';
+            // Get the team partner ID - the other player in the team
+            const partnerId = playerId === matchToDelete.team1_player1_id ? 
+              matchToDelete.team1_player2_id : matchToDelete.team1_player1_id;
+            
+            // Create updated profile with team partners section
+            const updatedProfile = { ...profile };
+            
+            // Update team partners stats if they exist
+            if (updatedProfile.team_partners && updatedProfile.team_partners[partnerId]) {
+              const teamStats = updatedProfile.team_partners[partnerId];
+              
+              // Update team partnership stats
+              teamStats.matches_played = Math.max(0, (teamStats.matches_played || 0) - 1);
+              teamStats.matches_won = isWinner ? Math.max(0, (teamStats.matches_won || 0) - 1) : (teamStats.matches_won || 0);
+              teamStats.points_scored = Math.max(0, (teamStats.points_scored || 0) - team1Score);
+              teamStats.points_conceded = Math.max(0, (teamStats.points_conceded || 0) - team2Score);
+              
+              // Reset team rating to default if this is their last match together
+              teamStats.team_rating = teamStats.matches_played <= 0 ? 1200 : Math.round(teamStats.team_rating - (isWinner ? 15 : -15));
+              
+              // If this was their only match together and it's now removed, we could also remove the team partner entry completely
+              if (teamStats.matches_played <= 0) {
+                delete updatedProfile.team_partners[partnerId];
+              }
+            }
+            
+            // Calculate updated doubles rating
+            const newDoublesRating = profile.doubles_matches_played <= 1 ? 
+              1200 : // Reset to default if this was their only doubles match
+              Math.round(profile.doubles_rating - (isWinner ? 15 : -15)); // Simple adjustment
+            
             await profilesContainer.item(playerId, playerId).replace({
-              ...profile,
+              ...updatedProfile,
               doubles_matches_played: Math.max(0, (profile.doubles_matches_played || 0) - 1),
               doubles_matches_won: isWinner ? Math.max(0, (profile.doubles_matches_won || 0) - 1) : (profile.doubles_matches_won || 0),
+              doubles_rating: newDoublesRating,
+              doubles_points_scored: Math.max(0, (profile.doubles_points_scored || 0) - team1PlayerPoints),
+              doubles_points_conceded: Math.max(0, (profile.doubles_points_conceded || 0) - team1PlayerConceded),
+              // Update overall rating
+              overall_rating: recalculateOverallRating(
+                profile.singles_rating || 1200,
+                newDoublesRating,
+                profile.matches_played || 0,
+                Math.max(0, (profile.doubles_matches_played || 0) - 1)
+              )
             });
           }
         }
@@ -205,12 +288,52 @@ function AllMatches() {
         for (const playerId of team2PlayerIds) {
           const { resource: profile } = await profilesContainer.item(playerId, playerId).read();
           if (profile) {
-            // Fixed: Use winner_team instead of winning_team
             const isWinner = matchToDelete.winner_team === 'team2';
+            // Get the team partner ID - the other player in the team
+            const partnerId = playerId === matchToDelete.team2_player1_id ? 
+              matchToDelete.team2_player2_id : matchToDelete.team2_player1_id;
+            
+            // Create updated profile with team partners section
+            const updatedProfile = { ...profile };
+            
+            // Update team partners stats if they exist
+            if (updatedProfile.team_partners && updatedProfile.team_partners[partnerId]) {
+              const teamStats = updatedProfile.team_partners[partnerId];
+              
+              // Update team partnership stats
+              teamStats.matches_played = Math.max(0, (teamStats.matches_played || 0) - 1);
+              teamStats.matches_won = isWinner ? Math.max(0, (teamStats.matches_won || 0) - 1) : (teamStats.matches_won || 0);
+              teamStats.points_scored = Math.max(0, (teamStats.points_scored || 0) - team2Score);
+              teamStats.points_conceded = Math.max(0, (teamStats.points_conceded || 0) - team1Score);
+              
+              // Reset team rating to default if this is their last match together
+              teamStats.team_rating = teamStats.matches_played <= 0 ? 1200 : Math.round(teamStats.team_rating - (isWinner ? 15 : -15));
+              
+              // If this was their only match together and it's now removed, we could also remove the team partner entry completely
+              if (teamStats.matches_played <= 0) {
+                delete updatedProfile.team_partners[partnerId];
+              }
+            }
+            
+            // Calculate updated doubles rating
+            const newDoublesRating = profile.doubles_matches_played <= 1 ? 
+              1200 : // Reset to default if this was their only doubles match
+              Math.round(profile.doubles_rating - (isWinner ? 15 : -15)); // Simple adjustment
+            
             await profilesContainer.item(playerId, playerId).replace({
-              ...profile,
+              ...updatedProfile,
               doubles_matches_played: Math.max(0, (profile.doubles_matches_played || 0) - 1),
               doubles_matches_won: isWinner ? Math.max(0, (profile.doubles_matches_won || 0) - 1) : (profile.doubles_matches_won || 0),
+              doubles_rating: newDoublesRating,
+              doubles_points_scored: Math.max(0, (profile.doubles_points_scored || 0) - team2PlayerPoints),
+              doubles_points_conceded: Math.max(0, (profile.doubles_points_conceded || 0) - team2PlayerConceded),
+              // Update overall rating
+              overall_rating: recalculateOverallRating(
+                profile.singles_rating || 1200,
+                newDoublesRating,
+                profile.matches_played || 0,
+                Math.max(0, (profile.doubles_matches_played || 0) - 1)
+              )
             });
           }
         }
@@ -226,6 +349,21 @@ function AllMatches() {
     } finally {
       setDeleteLoading(null);
     }
+  };
+  
+  // Helper function to recalculate overall rating based on singles and doubles matches
+  const recalculateOverallRating = (singlesRating: number, doublesRating: number, singlesMatchesPlayed: number, doublesMatchesPlayed: number): number => {
+    // If no matches played, return the base rating
+    if (singlesMatchesPlayed === 0 && doublesMatchesPlayed === 0) {
+      return 1200;
+    }
+    
+    // Calculate weighted average based on number of matches played in each category
+    const totalMatches = singlesMatchesPlayed + doublesMatchesPlayed;
+    const singlesWeight = singlesMatchesPlayed / totalMatches;
+    const doublesWeight = doublesMatchesPlayed / totalMatches;
+    
+    return Math.round((singlesRating * singlesWeight) + (doublesRating * doublesWeight));
   };
 
   const formatDate = (dateString: string) => {

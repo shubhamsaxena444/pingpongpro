@@ -64,10 +64,8 @@ function AddPlayer() {
       setUsername('');
       setFullName('');
       
-      // Navigate to leaderboard after a short delay
-      setTimeout(() => {
-        navigate('/leaderboard');
-      }, 2000);
+      // Removed automatic navigation to leaderboard
+      // Now user stays on the Add Player page
       
     } catch (err: any) {
       console.error('Error adding player:', err);
